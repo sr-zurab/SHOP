@@ -4,14 +4,14 @@ from django.conf import settings
 class Cart (models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
-        on_delete = models.CASCADE,
-        related_name = 'cart',
-        null = True,
-        blank = True
+        on_delete=models.CASCADE,
+        related_name='cart',
+        null=True,
+        blank=True
     )
-    session_key = models.CharField(max_length = 40, null = True, blank = True, db_index = True)
-    created = models.DateTimeField(auto_now_add = True)
-    updated = models.DateTimeField(auto_now = True)
+    session_key = models.CharField(max_length=40, null=True, blank=True, db_index=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     class Meta:
         constraints = [
@@ -24,9 +24,9 @@ class Cart (models.Model):
         return sum(item.get_total_price() for item in self.items.all())
 
 class CartItem (models.Model):
-    cart = models.ForeignKey(Cart, related_name = 'items', on_delete = models.CASCADE)
-    product = models.ForeignKey('shop.Product', on_delete = models.CASCADE)
-    quantity = models.PositiveIntegerField(default = 1)
+    cart = models.ForeignKey(Cart, related_name='items', on_delete = models.CASCADE)
+    product = models.ForeignKey('shop.Product', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
 
     class Meta:
         unique_together = ('cart', 'product')

@@ -4,4 +4,5 @@ gunicorn==25.1.0
 packaging==26.0
 sqlparse==0.5.5
 pillow==12.3.0
-django-imagekit==6.1.0 
+django-imagekit==6.1.0
+djangorestframework==3.18.0
