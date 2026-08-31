@@ -18,6 +18,7 @@ class Cart (models.Model):
             models.UniqueConstraint(
                 fields = ['session_key'],
                 condition = models.Q(user__isnull = True),
+                name = 'unique_anon_cart'
             )
         ]
     def get_total_price(self):
