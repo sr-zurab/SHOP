@@ -1,13 +1,15 @@
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny
-from .models import Product
-from .serializers import ProductListSerializer, ProductDetailSerializer
+from .models import Product, Category
+from .serializers import ProductListSerializer, ProductDetailSerializer, CategorySerializer
+
 
 class ProductPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 100
+
 
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [AllowAny]
@@ -19,7 +21,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'list':
             pass
         else:
-                qs = qs.prefetch_related('images')
+            qs = qs.prefetch_related('images')
         category_slug = self.request.query_params.get('category')
         if category_slug:
             qs = qs.filter(category__slug=category_slug)
@@ -35,3 +37,10 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_serializer_context(self):
         return {'request': self.request}
+
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'slug'
