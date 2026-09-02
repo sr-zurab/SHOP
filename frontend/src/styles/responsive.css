@@ -1,0 +1,31 @@
+@media (max-width: 640px) {
+  .mobile-menu-toggle {
+    display: block;
+  }
+
+  .header-nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    flex-direction: column;
+    padding: 12px 20px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .header-nav.open {
+    display: flex;
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 12px 12px;
+  }
+
+  .category-list {
+    padding: 12px;
+  }
+}

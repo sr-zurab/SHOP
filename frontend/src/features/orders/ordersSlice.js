@@ -13,6 +13,18 @@ export const fetchOrders = createAsyncThunk(
   }
 );
 
+export const fetchOrderById = createAsyncThunk(
+  'orders/fetchById',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const res = await authFetch(`/orders/${orderId}/`);
+      return await parseJsonOrThrow(res, 'Ошибка загрузки заказа');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const createOrder = createAsyncThunk(
   'orders/create',
   async ({ fullName, email, phone, address }, { rejectWithValue }) => {
@@ -45,6 +57,7 @@ const ordersSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // fetchOrders
       .addCase(fetchOrders.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -57,6 +70,25 @@ const ordersSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // fetchOrderById
+      .addCase(fetchOrderById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrderById.fulfilled, (state, action) => {
+        const index = state.list.findIndex((o) => o.id === action.payload.id);
+        if (index >= 0) {
+          state.list[index] = action.payload;
+        } else {
+          state.list.push(action.payload);
+        }
+        state.loading = false;
+      })
+      .addCase(fetchOrderById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // createOrder
       .addCase(createOrder.pending, (state) => {
         state.loading = true;
         state.error = null;

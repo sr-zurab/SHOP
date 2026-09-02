@@ -1,6 +1,7 @@
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
+from rest_framework import generics, permissions
+from .serializers import RegisterSerializer
 from cart.utils import merge_cart
 
 
@@ -21,3 +22,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             merge_cart(request, user)
 
         return response
+
+class RegisterView(generics.CreateAPIView):
+    serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]

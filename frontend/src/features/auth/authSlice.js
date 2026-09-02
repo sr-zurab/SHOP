@@ -20,6 +20,22 @@ export const login = createAsyncThunk(
   }
 );
 
+export const register = createAsyncThunk(
+  'auth/register',
+  async ({ username, email, password, phone }, { rejectWithValue }) => {
+    try {
+      const res = await authFetch('/auth/register/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password, phone }),
+      });
+      return await parseJsonOrThrow(res, 'Ошибка регистрации');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const refreshToken = createAsyncThunk(
   'auth/refresh',
   async (_, { rejectWithValue }) => {
@@ -55,6 +71,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // login
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -66,6 +83,22 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      // register
+      .addCase(register.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(register.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(register.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // refresh
+      .addCase(refreshToken.fulfilled, (state) => {
+        state.isAuthenticated = true;
       })
       .addCase(refreshToken.rejected, (state) => {
         // refresh протух — разлогиниваем

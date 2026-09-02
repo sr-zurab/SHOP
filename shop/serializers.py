@@ -28,7 +28,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'slug', 'price', 'thumbnail', 'category', 'in_stock']
+        fields = ['id', 'name', 'slug', 'price', 'thumbnail', 'category', 'in_stock', 'stock']
 
     def get_thumbnail(self, obj):
         request = self.context.get('request')
