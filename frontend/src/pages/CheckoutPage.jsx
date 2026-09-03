@@ -11,7 +11,13 @@ function CheckoutPage() {
   const { loading, error, lastCreated } = useSelector((state) => state.orders);
   const { isAuthenticated } = useSelector((state) => state.auth);
 
-  const [form, setForm] = useState({ fullName: '', email: '', phone: '', address: '' });
+  const [form, setForm] = useState({
+    deliveryMethod: 'courier',
+    fullName: '',
+    email: '',
+    phone: '',
+    address: '',
+  });
 
   useEffect(() => {
     dispatch(fetchCart());
@@ -25,7 +31,7 @@ function CheckoutPage() {
     e.preventDefault();
     const result = await dispatch(createOrder(form));
     if (createOrder.fulfilled.match(result)) {
-      dispatch(fetchCart()); // корзина очищена на бэке — синхронизируем
+      dispatch(fetchCart());
     }
   };
 
@@ -44,7 +50,7 @@ function CheckoutPage() {
         <h1>Заказ оформлен!</h1>
         <p>Номер заказа: #{lastCreated.id}</p>
         <p>Сумма: {lastCreated.total_price} ₽</p>
-        <Link to="/" className="btn btn-primary">На главную</Link>
+        <Link to="/orders" className="btn btn-primary">Мои заказы</Link>
       </div>
     );
   }
@@ -64,6 +70,29 @@ function CheckoutPage() {
 
       <div className="checkout-content">
         <form className="checkout-form" onSubmit={handleSubmit}>
+          <div className="delivery-method-selector">
+            <label className={`delivery-option ${form.deliveryMethod === 'courier' ? 'active' : ''}`}>
+              <input
+                type="radio"
+                name="deliveryMethod"
+                value="courier"
+                checked={form.deliveryMethod === 'courier'}
+                onChange={handleChange}
+              />
+              Курьером
+            </label>
+            <label className={`delivery-option ${form.deliveryMethod === 'pickup' ? 'active' : ''}`}>
+              <input
+                type="radio"
+                name="deliveryMethod"
+                value="pickup"
+                checked={form.deliveryMethod === 'pickup'}
+                onChange={handleChange}
+              />
+              Самовывоз
+            </label>
+          </div>
+
           <label>
             Имя и фамилия
             <input name="fullName" value={form.fullName} onChange={handleChange} required />
@@ -76,10 +105,13 @@ function CheckoutPage() {
             Телефон
             <input name="phone" value={form.phone} onChange={handleChange} required />
           </label>
-          <label>
-            Адрес доставки
-            <textarea name="address" value={form.address} onChange={handleChange} required />
-          </label>
+
+          {form.deliveryMethod === 'courier' && (
+            <label>
+              Адрес доставки
+              <textarea name="address" value={form.address} onChange={handleChange} required />
+            </label>
+          )}
 
           {error && <p className="auth-error">{error}</p>}
 

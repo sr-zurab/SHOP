@@ -31,7 +31,11 @@ function Header() {
           </Link>
 
           {isAuthenticated && (
-            <Link to="/orders" className="orders-link">Мои заказы</Link>
+            <>
+              <Link to="/profile" className="orders-link">Профиль</Link>
+              <Link to="/wishlist" className="orders-link">Избранное</Link>
+              <Link to="/orders" className="orders-link">Мои заказы</Link>
+            </>
           )}
 
           {isAuthenticated ? (

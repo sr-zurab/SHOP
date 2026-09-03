@@ -1,6 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -58,3 +59,25 @@ class OrderViewSet(viewsets.ViewSet):
             cart_items.delete()
 
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        order = get_object_or_404(Order, pk=pk, user=request.user)
+
+        if order.status not in (Order.Status.PENDING, Order.Status.PAID):
+            return Response(
+                {'detail': 'Заказ на этом этапе отменить нельзя'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            for item in order.items.select_related('product'):
+                if item.product:  # товар мог быть удалён из каталога
+                    product = Product.objects.select_for_update().get(pk=item.product.pk)
+                    product.stock += item.quantity
+                    product.save(update_fields=['stock'])
+
+            order.status = Order.Status.CANCELLED
+            order.save(update_fields=['status'])
+
+        return Response(OrderSerializer(order).data)

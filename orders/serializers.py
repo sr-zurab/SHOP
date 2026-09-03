@@ -15,7 +15,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'id', 'status', 'full_name', 'email', 'phone', 'address',
+            'id', 'status', 'delivery_method', 'full_name', 'email', 'phone', 'address',
             'items', 'total_price', 'created',
         ]
         read_only_fields = ['status']
@@ -25,7 +25,13 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class CreateOrderSerializer(serializers.Serializer):
+    delivery_method = serializers.ChoiceField(choices=Order.DeliveryMethod.choices)
     full_name = serializers.CharField(max_length=200)
     email = serializers.EmailField()
     phone = serializers.CharField(max_length=20)
-    address = serializers.CharField(max_length=500)
+    address = serializers.CharField(max_length=500, required=False, allow_blank=True)
+
+    def validate(self, data):
+        if data['delivery_method'] == Order.DeliveryMethod.COURIER and not data.get('address'):
+            raise serializers.ValidationError({'address': 'Укажите адрес доставки'})
+        return data

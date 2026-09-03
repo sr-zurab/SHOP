@@ -1,0 +1,30 @@
+.wishlist-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.wishlist-btn.active {
+  color: #e00;
+}
+
+.product-card-image-wrap {
+  position: relative;
+}
+
+.wishlist-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}

@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     'cart',
     'orders',
     'accounts',
+    'wishlist',
+    'reviews',
 ]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -116,3 +118,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True

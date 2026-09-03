@@ -11,6 +11,11 @@ const STATUS_LABELS = {
   cancelled: 'Отменён',
 };
 
+const DELIVERY_LABELS = {
+  courier: 'Курьером',
+  pickup: 'Самовывоз',
+};
+
 function OrdersPage() {
   const dispatch = useDispatch();
   const { list: orders, loading } = useSelector((state) => state.orders);
@@ -49,14 +54,35 @@ function OrdersPage() {
       <div className="orders-list">
         {orders.map((order) => (
           <Link key={order.id} to={`/orders/${order.id}`} className="order-card">
-            <div className="order-card-header">
-              <span className="order-card-number">Заказ #{order.id}</span>
+            <div className="order-card-top">
+              <div>
+                <span className="order-card-number">Заказ #{order.id}</span>
+                <span className="order-card-date">
+                  {new Date(order.created).toLocaleDateString('ru-RU', {
+                    day: 'numeric', month: 'long', year: 'numeric',
+                  })}
+                </span>
+              </div>
               <span className={`order-status order-status-${order.status}`}>
                 {STATUS_LABELS[order.status] || order.status}
               </span>
             </div>
-            <div className="order-card-body">
-              <span>{new Date(order.created).toLocaleDateString('ru-RU')}</span>
+
+            <div className="order-card-items-preview">
+              {order.items.slice(0, 4).map((item) => (
+                <span key={item.id} className="order-item-chip">
+                  {item.product_name} × {item.quantity}
+                </span>
+              ))}
+              {order.items.length > 4 && (
+                <span className="order-item-chip">+{order.items.length - 4} ещё</span>
+              )}
+            </div>
+
+            <div className="order-card-bottom">
+              <span className="order-card-delivery">
+                {DELIVERY_LABELS[order.delivery_method] || order.delivery_method}
+              </span>
               <span className="order-card-total">{order.total_price} ₽</span>
             </div>
           </Link>

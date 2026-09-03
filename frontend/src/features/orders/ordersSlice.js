@@ -46,6 +46,18 @@ export const createOrder = createAsyncThunk(
   }
 );
 
+export const cancelOrder = createAsyncThunk(
+  'orders/cancel',
+  async (orderId, { rejectWithValue }) => {
+    try {
+      const res = await authFetch(`/orders/${orderId}/cancel/`, { method: 'POST' });
+      return await parseJsonOrThrow(res, 'Ошибка отмены заказа');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const ordersSlice = createSlice({
   name: 'orders',
   initialState: {
@@ -101,7 +113,16 @@ const ordersSlice = createSlice({
       .addCase(createOrder.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
+      .addCase(cancelOrder.fulfilled, (state, action) => {
+        const index = state.list.findIndex((o) => o.id === action.payload.id);
+        if (index >= 0) {
+          state.list[index] = action.payload;
+        }
+      })
+      .addCase(cancelOrder.rejected, (state, action) => {
+        state.error = action.payload;
+      })    
   },
 });
 

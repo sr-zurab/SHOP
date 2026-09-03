@@ -66,6 +66,33 @@
   padding: 60px 20px;
 }
 
+.delivery-method-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.delivery-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.delivery-option.active {
+  border-color: #1a1a1a;
+  background: #f7f7f8;
+}
+
+.delivery-option input {
+  width: auto;
+}
+
 @media (max-width: 640px) {
   .checkout-content {
     grid-template-columns: 1fr;

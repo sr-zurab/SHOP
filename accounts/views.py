@@ -1,9 +1,10 @@
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework import generics, permissions
-from .serializers import RegisterSerializer
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from .serializers import RegisterSerializer, ProfileSerializer, ChangePasswordSerializer
 from cart.utils import merge_cart
-
+from rest_framework.views import APIView
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     pass  # можно кастомизировать claims здесь при необходимости
@@ -26,3 +27,23 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save()
+
+        return Response({'detail': 'Пароль изменён'}, status=status.HTTP_200_OK)
