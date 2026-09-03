@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from .models import Review
 from .serializers import ReviewSerializer, CreateReviewSerializer
@@ -6,7 +6,7 @@ from .serializers import ReviewSerializer, CreateReviewSerializer
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.select_related('user', 'product')
-    http_method_names = ['get', 'post', 'delete']  # без PUT/PATCH — отзыв не редактируется, только удаляется и создаётся заново
+    http_method_names = ['get', 'post', 'delete']
 
     def get_permissions(self):
         if self.action in ('create', 'destroy'):
@@ -25,11 +25,16 @@ class ReviewViewSet(viewsets.ModelViewSet):
             return CreateReviewSerializer
         return ReviewSerializer
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        review = serializer.save(user=request.user)
+
+        # возвращаем полный объект через ReviewSerializer, а не CreateReviewSerializer
+        output_serializer = ReviewSerializer(review)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_destroy(self, instance):
-        # можно удалить только свой отзыв
         if instance.user != self.request.user:
             from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied('Нельзя удалить чужой отзыв')

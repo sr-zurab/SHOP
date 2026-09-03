@@ -27,13 +27,14 @@ export const fetchOrderById = createAsyncThunk(
 
 export const createOrder = createAsyncThunk(
   'orders/create',
-  async ({ fullName, email, phone, address }, { rejectWithValue }) => {
+  async ({ delivery_method, full_name, email, phone, address }, { rejectWithValue }) => {
     try {
       const res = await authFetch('/orders/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name: fullName,
+          delivery_method,
+          full_name,
           email,
           phone,
           address,
@@ -66,7 +67,11 @@ const ordersSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    resetLastCreated(state){
+      state.lastCreated = null;
+    }
+  },
   extraReducers: (builder) => {
     builder
       // fetchOrders
@@ -126,4 +131,5 @@ const ordersSlice = createSlice({
   },
 });
 
+export const {resetLastCreated} = ordersSlice.actions;
 export default ordersSlice.reducer;

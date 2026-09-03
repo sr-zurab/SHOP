@@ -8,8 +8,11 @@ import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import WishlistPage from './pages/WishlistPage';
 import ProfilePage from './pages/ProfilePage';
+import useTokenRefreshTimer from './hooks/useTokenRefreshTimer';
 
 function App() {
+  useTokenRefreshTimer();
+
   return (
     <BrowserRouter>
       <Header />

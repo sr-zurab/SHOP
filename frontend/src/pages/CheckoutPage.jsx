@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCart } from '../features/cart/cartSlice';
-import { createOrder } from '../features/orders/ordersSlice';
+import { createOrder, resetLastCreated } from '../features/orders/ordersSlice';
 
 function CheckoutPage() {
   const dispatch = useDispatch();
@@ -12,14 +12,15 @@ function CheckoutPage() {
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   const [form, setForm] = useState({
-    deliveryMethod: 'courier',
-    fullName: '',
+    delivery_method: 'courier',
+    full_name: '',
     email: '',
     phone: '',
     address: '',
   });
 
   useEffect(() => {
+    dispatch(resetLastCreated());
     dispatch(fetchCart());
   }, [dispatch]);
 
@@ -71,22 +72,22 @@ function CheckoutPage() {
       <div className="checkout-content">
         <form className="checkout-form" onSubmit={handleSubmit}>
           <div className="delivery-method-selector">
-            <label className={`delivery-option ${form.deliveryMethod === 'courier' ? 'active' : ''}`}>
+            <label className={`delivery-option ${form.delivery_method === 'courier' ? 'active' : ''}`}>
               <input
                 type="radio"
-                name="deliveryMethod"
+                name="delivery_method"
                 value="courier"
-                checked={form.deliveryMethod === 'courier'}
+                checked={form.delivery_method === 'courier'}
                 onChange={handleChange}
               />
               Курьером
             </label>
-            <label className={`delivery-option ${form.deliveryMethod === 'pickup' ? 'active' : ''}`}>
+            <label className={`delivery-option ${form.delivery_method === 'pickup' ? 'active' : ''}`}>
               <input
                 type="radio"
-                name="deliveryMethod"
+                name="delivery_method"
                 value="pickup"
-                checked={form.deliveryMethod === 'pickup'}
+                checked={form.delivery_method === 'pickup'}
                 onChange={handleChange}
               />
               Самовывоз
@@ -95,7 +96,7 @@ function CheckoutPage() {
 
           <label>
             Имя и фамилия
-            <input name="fullName" value={form.fullName} onChange={handleChange} required />
+            <input name="full_name" value={form.full_name} onChange={handleChange} required />
           </label>
           <label>
             Email
@@ -106,7 +107,7 @@ function CheckoutPage() {
             <input name="phone" value={form.phone} onChange={handleChange} required />
           </label>
 
-          {form.deliveryMethod === 'courier' && (
+          {form.delivery_method === 'courier' && (
             <label>
               Адрес доставки
               <textarea name="address" value={form.address} onChange={handleChange} required />
