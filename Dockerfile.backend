@@ -18,7 +18,6 @@ COPY requirements.txt /app/
 
 # Установка зависимостей
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install gunicorn
 
 # Копирование кода проекта
 COPY . /app/
@@ -42,4 +41,4 @@ EXPOSE 8000
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Запуск Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--log-level=info", "--log-file=-", "frame_shop.wsgi:application"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "frame_shop.asgi:application"]

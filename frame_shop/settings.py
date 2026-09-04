@@ -4,10 +4,7 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'django-insecure-!cm3u&(r*!u*m44as5kr(u7r0nt)0el=)#+(*s(b*&3#1en5kx',
-)
+SECRET_KEY = os.environ['SECRET_KEY']
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
@@ -34,6 +31,8 @@ INSTALLED_APPS = [
     'accounts',
     'wishlist',
     'reviews',
+    'chat',
+    'channels',
 ]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -70,6 +69,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'frame_shop.urls'
+
+ASGI_APPLICATION = 'frame_shop.asgi.application'
 
 TEMPLATES = [
     {
@@ -122,3 +123,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
+
+REDIS_HOST = os.environ.get('REDIS_HOST', 'redis')
+REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [(REDIS_HOST, int(REDIS_PORT))],
+        },
+    },
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        }
+    }
+}
+
+ASGI_APPLICATION = 'frame_shop.asgi.application'

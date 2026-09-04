@@ -5,6 +5,11 @@ packaging==26.0
 sqlparse==0.5.5
 pillow==12.3.0
 django-imagekit==6.1.0
+django-redis
 djangorestframework==3.18.0
 djangorestframework-simplejwt==5.5.1
 psycopg2-binary
+channels
+channels-redis
+daphne
+uvicorn
