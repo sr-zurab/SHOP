@@ -51,40 +51,39 @@ function OrdersPage() {
     <div className="orders-page">
       <h1>Мои заказы</h1>
 
-      <div className="orders-list">
+      <div className="orders-table">
+        <div className="orders-table-header">
+          <span>Заказ</span>
+          <span>Дата</span>
+          <span>Доставка</span>
+          <span>Статус</span>
+          <span className="orders-table-total-col">Сумма</span>
+        </div>
+
         {orders.map((order) => (
-          <Link key={order.id} to={`/orders/${order.id}`} className="order-card">
-            <div className="order-card-top">
-              <div>
-                <span className="order-card-number">Заказ #{order.id}</span>
-                <span className="order-card-date">
-                  {new Date(order.created).toLocaleDateString('ru-RU', {
-                    day: 'numeric', month: 'long', year: 'numeric',
-                  })}
-                </span>
-              </div>
-              <span className={`order-status order-status-${order.status}`}>
-                {STATUS_LABELS[order.status] || order.status}
+          <Link key={order.id} to={`/orders/${order.id}`} className="order-row">
+            <span className="order-row-number">
+              #{order.id}
+              <span className="order-row-items-count">
+                {order.items.length} {order.items.length === 1 ? 'товар' : 'товара(ов)'}
               </span>
-            </div>
+            </span>
 
-            <div className="order-card-items-preview">
-              {order.items.slice(0, 4).map((item) => (
-                <span key={item.id} className="order-item-chip">
-                  {item.product_name} × {item.quantity}
-                </span>
-              ))}
-              {order.items.length > 4 && (
-                <span className="order-item-chip">+{order.items.length - 4} ещё</span>
-              )}
-            </div>
+            <span className="order-row-date">
+              {new Date(order.created).toLocaleDateString('ru-RU', {
+                day: 'numeric', month: 'short', year: 'numeric',
+              })}
+            </span>
 
-            <div className="order-card-bottom">
-              <span className="order-card-delivery">
-                {DELIVERY_LABELS[order.delivery_method] || order.delivery_method}
-              </span>
-              <span className="order-card-total">{order.total_price} ₽</span>
-            </div>
+            <span className="order-row-delivery">
+              {DELIVERY_LABELS[order.delivery_method] || order.delivery_method}
+            </span>
+
+            <span className={`order-status order-status-${order.status}`}>
+              {STATUS_LABELS[order.status] || order.status}
+            </span>
+
+            <span className="order-row-total">{order.total_price} ₽</span>
           </Link>
         ))}
       </div>
