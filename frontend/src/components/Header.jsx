@@ -19,15 +19,19 @@ function Header() {
         <Link to="/" className="logo">Магазин</Link>
 
         <button
-          className="mobile-menu-toggle"
+          className="menu-toggle"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-label="Меню"
         >
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
+        {menuOpen && (
+          <div className="menu-overlay" onClick={() => setMenuOpen(false)} />
+        )}
+
         <nav className={`header-nav ${menuOpen ? 'open' : ''}`}>
-          <Link to="/cart" className="icon-link cart-link" aria-label="Корзина">
+          <Link to="/cart" className="icon-link cart-link" aria-label="Корзина" onClick={() => setMenuOpen(false)}>
             <ShoppingCart size={20} />
             <span className="icon-link-label">Корзина</span>
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
@@ -35,15 +39,15 @@ function Header() {
 
           {isAuthenticated && (
             <>
-              <Link to="/profile" className="icon-link" aria-label="Профиль">
+              <Link to="/profile" className="icon-link" aria-label="Профиль" onClick={() => setMenuOpen(false)}>
                 <User size={20} />
                 <span className="icon-link-label">Профиль</span>
               </Link>
-              <Link to="/wishlist" className="icon-link" aria-label="Избранное">
+              <Link to="/wishlist" className="icon-link" aria-label="Избранное" onClick={() => setMenuOpen(false)}>
                 <Heart size={20} />
                 <span className="icon-link-label">Избранное</span>
               </Link>
-              <Link to="/orders" className="icon-link" aria-label="Мои заказы">
+              <Link to="/orders" className="icon-link" aria-label="Мои заказы" onClick={() => setMenuOpen(false)}>
                 <Package size={20} />
                 <span className="icon-link-label">Мои заказы</span>
               </Link>
@@ -53,7 +57,13 @@ function Header() {
           {isAuthenticated ? (
             <LogoutButton />
           ) : (
-            <button className="btn btn-outline" onClick={() => setAuthOpen(true)}>
+            <button
+              className="btn btn-outline"
+              onClick={() => {
+                setAuthOpen(true);
+                setMenuOpen(false);
+              }}
+            >
               Войти
             </button>
           )}

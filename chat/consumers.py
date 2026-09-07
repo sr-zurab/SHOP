@@ -42,6 +42,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except json.JSONDecodeError:
             return
 
+        if data.get('type') == 'ping':
+            await self.send(text_data=json.dumps({'type': 'pong'}))
+            return
+
         text = data.get('text', '').strip()
         if not text or len(text) > MAX_MESSAGE_LENGTH:
             return

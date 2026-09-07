@@ -7,6 +7,7 @@ import ordersReducer from '../features/orders/ordersSlice';
 import wishlistReducer from '../features/wishlist/wishlistSlice';
 import profileReducer from '../features/profile/profileSlice';
 import reviewsReducer from '../features/reviews/reviewsSlice';
+import chatReducer from '../features/chat/chatSlice';
 
 export const store = configureStore({
   reducer: {
@@ -18,5 +19,6 @@ export const store = configureStore({
     wishlist: wishlistReducer,
     profile: profileReducer,
     reviews: reviewsReducer,
+    chat: chatReducer,
   },
 });

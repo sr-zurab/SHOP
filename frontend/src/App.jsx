@@ -8,6 +8,7 @@ import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import WishlistPage from './pages/WishlistPage';
 import ProfilePage from './pages/ProfilePage';
+import ChatWidget from './components/ChatWidget';
 import useTokenRefreshTimer from './hooks/useTokenRefreshTimer';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </main>
+      <ChatWidget />
     </BrowserRouter>
   );
 }
