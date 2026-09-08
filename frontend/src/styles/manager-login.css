@@ -1,0 +1,35 @@
+.manager-login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f7f7f8;
+}
+
+.manager-login-box {
+  background: white;
+  border-radius: 14px;
+  padding: 32px;
+  width: 90%;
+  max-width: 360px;
+}
+
+.manager-login-box h1 {
+  font-size: 20px;
+  margin-top: 0;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.manager-login-box form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manager-login-box input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}

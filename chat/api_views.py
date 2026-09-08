@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -31,7 +32,11 @@ class ManagerChatRoomListView(ListAPIView):
     def get_queryset(self):
         if not self.request.user.is_manager:
             return ChatRoom.objects.none()
-        return ChatRoom.objects.filter(is_closed=False).select_related('user').order_by('-created')
+        return ChatRoom.objects.filter(
+            is_closed=False
+        ).filter(
+            Q(assigned_manager__isnull=True) | Q(assigned_manager=self.request.user)
+        ).select_related('user', 'assigned_manager').order_by('-created')
 
 
 class AssignChatRoomView(APIView):
@@ -85,7 +90,6 @@ class MarkMessagesReadView(APIView):
         if room.user_id != request.user.id and not request.user.is_manager:
             raise PermissionDenied('Нет доступа к этому чату')
 
-        # Помечаем прочитанными сообщения не от текущего пользователя
         ChatMessage.objects.filter(room=room, is_read=False).exclude(sender=request.user).update(is_read=True)
 
         return Response({'detail': 'ok'})

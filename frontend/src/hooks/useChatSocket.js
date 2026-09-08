@@ -26,6 +26,7 @@ function useChatSocket(roomId, wsToken, onDisconnected) {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.error) return;
+      if (data.type === 'pong') return;
       dispatch(addMessage(data));
     };
 

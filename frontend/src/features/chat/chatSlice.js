@@ -3,9 +3,13 @@ import { authFetch, parseJsonOrThrow } from '../../api/authFetch';
 
 export const getWsToken = createAsyncThunk(
   'chat/getWsToken',
-  async (_, { rejectWithValue }) => {
+  async (roomId, { rejectWithValue }) => {
     try {
-      const res = await authFetch('/chat/ws-token/', { method: 'POST' });
+      const res = await authFetch('/chat/ws-token/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(roomId ? { room_id: roomId } : {}),
+      });
       return await parseJsonOrThrow(res, 'Ошибка получения токена чата');
     } catch (error) {
       return rejectWithValue(error.message);

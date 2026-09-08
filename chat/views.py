@@ -1,8 +1,10 @@
 import secrets
 from django.core.cache import cache
+from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from .models import ChatRoom
 
 
@@ -10,7 +12,14 @@ class GetWsTokenView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        room, _ = ChatRoom.objects.get_or_create(user=request.user)
+        room_id = request.data.get('room_id')
+
+        if room_id:
+            room = get_object_or_404(ChatRoom, id=room_id)
+            if not request.user.is_manager:
+                raise PermissionDenied('Нет доступа')
+        else:
+            room, _ = ChatRoom.objects.get_or_create(user=request.user)
 
         ws_token = secrets.token_urlsafe(32)
         cache.set(f'ws_token:{ws_token}', request.user.id, timeout=30)

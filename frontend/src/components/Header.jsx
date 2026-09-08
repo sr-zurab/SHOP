@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { ShoppingCart, User, Heart, Package, Menu, X } from 'lucide-react';
+import { ShoppingCart, User, Heart, Package, Menu, X, Headset } from 'lucide-react';
 import AuthForm from './AuthForm';
 import LogoutButton from './LogoutButton';
 
 function Header() {
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const { data: profile } = useSelector((state) => state.profile);
   const cartCount = useSelector((state) =>
     state.cart.data.items.reduce((sum, item) => sum + item.quantity, 0)
   );
@@ -52,6 +53,13 @@ function Header() {
                 <span className="icon-link-label">Мои заказы</span>
               </Link>
             </>
+          )}
+
+          {profile?.is_manager && (
+            <Link to="/manager/chats" className="icon-link" aria-label="Чаты поддержки" onClick={() => setMenuOpen(false)}>
+              <Headset size={20} />
+              <span className="icon-link-label">Чаты поддержки</span>
+            </Link>
           )}
 
           {isAuthenticated ? (
