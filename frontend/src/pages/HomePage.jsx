@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts } from '../features/products/productsSlice';
 import { fetchCategories } from '../features/categories/categoriesSlice';
 import { fetchCart } from '../features/cart/cartSlice';
 import CategoryList from '../components/CategoryList';
 import ProductCard from '../components/ProductCard';
+import SearchBar from '../components/SearchBar';
 
 function HomePage() {
   const dispatch = useDispatch();
   const { list: products, loading, count, next } = useSelector((state) => state.products);
   const { list: categories } = useSelector((state) => state.categories);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -19,16 +21,23 @@ function HomePage() {
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchProducts({ category: activeCategory, page }));
-  }, [dispatch, activeCategory, page]);
+    dispatch(fetchProducts({ category: activeCategory, search, page }));
+  }, [dispatch, activeCategory, search, page]);
 
   const handleCategorySelect = (slug) => {
     setActiveCategory(slug);
     setPage(1);
   };
 
+  const handleSearch = useCallback((query) => {
+    setSearch(query);
+    setPage(1);
+  }, []);
+
   return (
     <div className="home-page">
+      <SearchBar onSearch={handleSearch} />
+
       <CategoryList
         categories={categories}
         activeSlug={activeCategory}
@@ -44,7 +53,9 @@ function HomePage() {
       </div>
 
       {!loading && products.length === 0 && (
-        <p className="empty-text">Товары не найдены</p>
+        <p className="empty-text">
+          {search ? `По запросу «${search}» ничего не найдено` : 'Товары не найдены'}
+        </p>
       )}
 
       {next && (

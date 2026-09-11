@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Header from './components/Header';
 import HomePage from './pages/HomePage';
@@ -21,6 +21,7 @@ function AppContent() {
   useTokenRefreshTimer();
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const { data: profile } = useSelector((state) => state.profile);
   const location = useLocation();
   const isManagerLogin = location.pathname === '/manager/login';
   const isManagerArea = location.pathname.startsWith('/manager/');
@@ -30,6 +31,10 @@ function AppContent() {
       dispatch(fetchProfile());
     }
   }, [isAuthenticated, dispatch]);
+
+  if (isAuthenticated && profile?.is_manager && !isManagerArea) {
+    return <Navigate to="/manager/chats" replace />;
+  }
 
   return (
     <>
