@@ -1,3 +1,6 @@
+import { useState, useRef, useEffect } from 'react';
+import { FiChevronDown, FiCheck } from 'react-icons/fi';
+
 const OPTIONS = [
   { value: '', label: 'По умолчанию' },
   { value: 'newest', label: 'Новинки' },
@@ -8,18 +11,55 @@ const OPTIONS = [
 ];
 
 function SortSelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const current = OPTIONS.find((opt) => opt.value === value) || OPTIONS[0];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (optionValue) => {
+    onChange(optionValue);
+    setOpen(false);
+  };
+
   return (
-    <select
-      className="sort-select"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      {OPTIONS.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
+    <div className="sort-select" ref={containerRef}>
+      <button
+        type="button"
+        className="sort-select-toggle"
+        onClick={() => setOpen(!open)}
+        aria-label="Сортировка"
+      >
+        <span>{current.label}</span>
+        <FiChevronDown size={16} className={`sort-select-chevron ${open ? 'open' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="sort-select-menu">
+          {OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`sort-select-option ${opt.value === value ? 'active' : ''}`}
+              onClick={() => handleSelect(opt.value)}
+            >
+              <span>{opt.label}</span>
+              {opt.value === value && <FiCheck size={16} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
