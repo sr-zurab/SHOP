@@ -6,13 +6,15 @@ import { fetchCart } from '../features/cart/cartSlice';
 import CategoryList from '../components/CategoryList';
 import ProductCard from '../components/ProductCard';
 import SearchBar from '../components/SearchBar';
+import SortSelect from '../components/SortSelect';
 
 function HomePage() {
   const dispatch = useDispatch();
-  const { list: products, loading, count, next } = useSelector((state) => state.products);
+  const { list: products, loading, next } = useSelector((state) => state.products);
   const { list: categories } = useSelector((state) => state.categories);
   const [activeCategory, setActiveCategory] = useState(null);
   const [search, setSearch] = useState('');
+  const [ordering, setOrdering] = useState('');
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -21,8 +23,8 @@ function HomePage() {
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchProducts({ category: activeCategory, search, page }));
-  }, [dispatch, activeCategory, search, page]);
+    dispatch(fetchProducts({ category: activeCategory, search, ordering, page }));
+  }, [dispatch, activeCategory, search, ordering, page]);
 
   const handleCategorySelect = (slug) => {
     setActiveCategory(slug);
@@ -34,9 +36,17 @@ function HomePage() {
     setPage(1);
   }, []);
 
+  const handleOrderingChange = (value) => {
+    setOrdering(value);
+    setPage(1);
+  };
+
   return (
     <div className="home-page">
-      <SearchBar onSearch={handleSearch} />
+      <div className="home-toolbar">
+        <SearchBar onSearch={handleSearch} />
+        <SortSelect value={ordering} onChange={handleOrderingChange} />
+      </div>
 
       <CategoryList
         categories={categories}

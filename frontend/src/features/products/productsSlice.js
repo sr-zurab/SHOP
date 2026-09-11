@@ -3,11 +3,12 @@ import { authFetch, parseJsonOrThrow } from '../../api/authFetch';
 
 export const fetchProducts = createAsyncThunk(
   'products/fetch',
-  async ({ category, search, page } = {}, { rejectWithValue }) => {
+  async ({ category, search, ordering, page } = {}, { rejectWithValue }) => {
     try {
       const params = new URLSearchParams();
       if (category) params.set('category', category);
       if (search) params.set('search', search);
+      if (ordering) params.set('ordering', ordering);
       if (page) params.set('page', page);
 
       const res = await authFetch(`/products/?${params.toString()}`);
