@@ -1,9 +1,12 @@
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count
 from rest_framework import viewsets
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import AllowAny
-from .models import Product, Category
-from .serializers import ProductListSerializer, ProductDetailSerializer, CategorySerializer
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from .models import Product, Category, ProductImage
+from .serializers import (
+    ProductListSerializer, ProductDetailSerializer, CategorySerializer,
+    ProductWriteSerializer,
+)
 
 ORDERING_MAP = {
     'price_asc': ['price'],
@@ -20,15 +23,28 @@ class ProductPagination(PageNumberPagination):
     max_page_size = 100
 
 
-class ProductViewSet(viewsets.ReadOnlyModelViewSet):
-    permission_classes = [AllowAny]
+class IsManagerOrReadOnly(IsAuthenticated):
+    def has_permission(self, request, view):
+        if request.method in ('GET', 'HEAD', 'OPTIONS'):
+            return True
+        return bool(request.user and request.user.is_authenticated and request.user.is_manager)
+
+
+class ProductViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsManagerOrReadOnly]
     pagination_class = ProductPagination
     lookup_field = 'slug'
 
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [AllowAny()]
+        return [IsManagerOrReadOnly()]
+
     def get_queryset(self):
-        qs = Product.objects.filter(available=True).select_related('category')
+        qs = Product.objects.select_related('category')
 
         if self.action == 'list':
+            qs = qs.filter(available=True)
             qs = qs.annotate(
                 orders_count=Count('orderitem', distinct=True),
                 avg_rating=Avg('reviews__rating'),
@@ -53,14 +69,35 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return ProductListSerializer
+        if self.action in ('create', 'update', 'partial_update'):
+            return ProductWriteSerializer
         return ProductDetailSerializer
 
     def get_serializer_context(self):
         return {'request': self.request}
 
+    def _create_gallery_images(self, product):
+        for order, image in enumerate(self.request.FILES.getlist('gallery_images')):
+            ProductImage.objects.create(product=product, image=image, order=order)
 
-class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    def perform_create(self, serializer):
+        product = serializer.save()
+        self._create_gallery_images(product)
+
+    def perform_update(self, serializer):
+        product = serializer.save()
+        last_order = product.images.order_by('-order').values_list('order', flat=True).first()
+        start_order = (last_order + 1) if last_order is not None else 0
+        for offset, image in enumerate(self.request.FILES.getlist('gallery_images')):
+            ProductImage.objects.create(product=product, image=image, order=start_order + offset)
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [AllowAny]
     lookup_field = 'slug'
+
+    def get_permissions(self):
+        if self.action in ('list', 'retrieve'):
+            return [AllowAny()]
+        return [IsManagerOrReadOnly()]

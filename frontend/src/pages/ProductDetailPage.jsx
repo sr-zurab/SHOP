@@ -23,7 +23,7 @@ function ProductDetailPage() {
 
   useEffect(() => {
     if (product) {
-      setActiveImage(product.images?.[0]?.image || product.thumbnail);
+      setActiveImage(product.main_image || product.images?.[0]?.image || product.thumbnail);
       dispatch(fetchReviews(product.id));
     }
   }, [product, dispatch]);
@@ -46,8 +46,16 @@ function ProductDetailPage() {
             )}
           </div>
 
-          {product.images?.length > 1 && (
+          {(product.main_image || product.images?.length > 0) && (
             <div className="product-detail-thumbnails">
+              {product.main_image && (
+                <img
+                  src={product.thumbnail || product.main_image}
+                  alt={`${product.name} главная картинка`}
+                  className={activeImage === product.main_image ? 'active' : ''}
+                  onClick={() => setActiveImage(product.main_image)}
+                />
+              )}
               {product.images.map((img) => (
                 <img
                   key={img.id}

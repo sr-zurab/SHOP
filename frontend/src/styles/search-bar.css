@@ -2,9 +2,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1200px;
-  margin: 16px auto 0;
-  padding: 0 20px;
+  padding: 20px 20px 12px;
   gap: 12px;
 }
 
@@ -54,7 +52,7 @@
 }
 
 .search-bar.expanded .search-bar-input {
-  width: min(320px, 60vw);
+  width: min(320px, 50vw);
   opacity: 1;
   pointer-events: auto;
   padding-right: 44px;
@@ -85,30 +83,26 @@
 }
 
 .sort-select-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  font-size: 14px;
-  background: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: #f0f0f0;
   color: #1a1a1a;
   cursor: pointer;
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s;
 }
 
 .sort-select-toggle:hover {
-  background: #f7f7f8;
+  background: #e4e4e4;
 }
 
-.sort-select-chevron {
-  transition: transform 0.15s ease;
-  flex-shrink: 0;
-}
-
-.sort-select-chevron.open {
-  transform: rotate(180deg);
+.sort-select-toggle.active {
+  background: #1a1a1a;
+  color: white;
 }
 
 .sort-select-menu {
@@ -149,22 +143,10 @@
 
 @media (max-width: 640px) {
   .home-toolbar {
-    padding: 0 12px;
-    flex-wrap: wrap;
-    gap: 8px;
+    padding: 12px 12px 8px;
   }
 
   .search-bar.expanded .search-bar-input {
-    width: min(220px, 55vw);
-  }
-
-  .sort-select-toggle {
-    font-size: 13px;
-    padding: 7px 12px;
-  }
-
-  .sort-select-menu {
-    right: 0;
-    min-width: 180px;
+    width: min(200px, 50vw);
   }
 }

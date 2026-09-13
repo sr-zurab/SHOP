@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { FiChevronDown, FiCheck } from 'react-icons/fi';
+import { FiSliders, FiCheck } from 'react-icons/fi';
 
 const OPTIONS = [
   { value: '', label: 'По умолчанию' },
@@ -13,8 +13,6 @@ const OPTIONS = [
 function SortSelect({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
-
-  const current = OPTIONS.find((opt) => opt.value === value) || OPTIONS[0];
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -36,12 +34,11 @@ function SortSelect({ value, onChange }) {
     <div className="sort-select" ref={containerRef}>
       <button
         type="button"
-        className="sort-select-toggle"
+        className={`sort-select-toggle ${value ? 'active' : ''}`}
         onClick={() => setOpen(!open)}
         aria-label="Сортировка"
       >
-        <span>{current.label}</span>
-        <FiChevronDown size={16} className={`sort-select-chevron ${open ? 'open' : ''}`} />
+        <FiSliders size={20} />
       </button>
 
       {open && (

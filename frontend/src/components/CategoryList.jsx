@@ -1,8 +1,8 @@
 function CategoryList({ categories, activeSlug, onSelect }) {
   return (
-    <div className="category-list">
+    <div className="category-list-vertical">
       <button
-        className={`category-chip ${!activeSlug ? 'active' : ''}`}
+        className={`category-item ${!activeSlug ? 'active' : ''}`}
         onClick={() => onSelect(null)}
       >
         Все товары
@@ -10,7 +10,7 @@ function CategoryList({ categories, activeSlug, onSelect }) {
       {categories.map((cat) => (
         <button
           key={cat.id}
-          className={`category-chip ${activeSlug === cat.slug ? 'active' : ''}`}
+          className={`category-item ${activeSlug === cat.slug ? 'active' : ''}`}
           onClick={() => onSelect(cat.slug)}
         >
           {cat.name}

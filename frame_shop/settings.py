@@ -8,11 +8,11 @@ SECRET_KEY = os.environ['SECRET_KEY']
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.33').split(',')
 
 CSRF_TRUSTED_ORIGINS = os.environ.get(
     'CSRF_TRUSTED_ORIGINS',
-    'http://localhost,https://localhost,http://127.0.0.1,https://127.0.0.1',
+    'http://localhost,https://localhost,http://127.0.0.1,https://127.0.0.1,https://192.168.1.33,http://192.168.1.33'
 ).split(',')
 
 INSTALLED_APPS = [

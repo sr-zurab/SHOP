@@ -13,6 +13,37 @@ export const fetchCategories = createAsyncThunk(
   }
 );
 
+export const createCategory = createAsyncThunk(
+  'categories/create',
+  async ({ name, slug }, { rejectWithValue }) => {
+    try {
+      const res = await authFetch('/categories/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, slug }),
+      });
+      return await parseJsonOrThrow(res, 'Ошибка создания категории');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const deleteCategory = createAsyncThunk(
+  'categories/delete',
+  async (slug, { rejectWithValue }) => {
+    try {
+      const res = await authFetch(`/categories/${slug}/`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 204) {
+        throw new Error('Ошибка удаления категории');
+      }
+      return slug;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const categoriesSlice = createSlice({
   name: 'categories',
   initialState: {
@@ -34,6 +65,12 @@ const categoriesSlice = createSlice({
       .addCase(fetchCategories.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(createCategory.fulfilled, (state, action) => {
+        state.list.push(action.payload);
+      })
+      .addCase(deleteCategory.fulfilled, (state, action) => {
+        state.list = state.list.filter((c) => c.slug !== action.payload);
       });
   },
 });

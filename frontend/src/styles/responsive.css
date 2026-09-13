@@ -5,11 +5,24 @@
     padding: 0 12px 12px;
   }
 
-  .category-list {
+  .home-page-layout {
+    display: block;
+  }
+
+  .home-sidebar {
     padding: 12px;
   }
 
-  .header-nav {
-    width: 100%;
+  .category-list-vertical {
+    flex-direction: row;
+    overflow-x: auto;
+    position: static;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .category-item {
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 }

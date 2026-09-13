@@ -16,6 +16,8 @@ import useTokenRefreshTimer from './hooks/useTokenRefreshTimer';
 import { fetchProfile } from './features/profile/profileSlice';
 import ManagerLoginPage from './pages/ManagerLoginPage';
 import ManagerHeader from './components/ManagerHeader';
+import ManagerProductsPage from './pages/ManagerProductsPage';
+
 
 function AppContent() {
   useTokenRefreshTimer();
@@ -51,6 +53,7 @@ function AppContent() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/manager/chats" element={<ManagerChatPage />} />
           <Route path="/manager/login" element={<ManagerLoginPage />} />
+          <Route path="/manager/products" element={<ManagerProductsPage />} />
         </Routes>
       </main>
       {!isManagerLogin && !isManagerArea && <ChatWidget />}

@@ -1,25 +1,32 @@
-.category-list {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 16px 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+.home-sidebar {
+  padding: 20px 12px;
 }
 
-.category-chip {
-  flex-shrink: 0;
-  white-space: nowrap;
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: 1px solid #ddd;
-  background: white;
+.category-list-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: sticky;
+  top: 76px;
+}
+
+.category-item {
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: none;
   cursor: pointer;
   font-size: 14px;
+  color: #444;
 }
 
-.category-chip.active {
+.category-item:hover {
+  background: #f0f0f0;
+}
+
+.category-item.active {
   background: #1a1a1a;
   color: white;
-  border-color: #1a1a1a;
+  font-weight: 500;
 }

@@ -31,6 +31,51 @@ export const fetchProductBySlug = createAsyncThunk(
   }
 );
 
+export const createProduct = createAsyncThunk(
+  'products/create',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const res = await authFetch('/products/', {
+        method: 'POST',
+        body: formData, // FormData — не ставим Content-Type вручную, браузер сам выставит с boundary
+      });
+      return await parseJsonOrThrow(res, 'Ошибка создания товара');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateProduct = createAsyncThunk(
+  'products/update',
+  async ({ slug, formData }, { rejectWithValue }) => {
+    try {
+      const res = await authFetch(`/products/${slug}/`, {
+        method: 'PATCH',
+        body: formData,
+      });
+      return await parseJsonOrThrow(res, 'Ошибка обновления товара');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const deleteProduct = createAsyncThunk(
+  'products/delete',
+  async (slug, { rejectWithValue }) => {
+    try {
+      const res = await authFetch(`/products/${slug}/`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 204) {
+        throw new Error('Ошибка удаления товара');
+      }
+      return slug;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const productsSlice = createSlice({
   name: 'products',
   initialState: {
@@ -75,6 +120,16 @@ const productsSlice = createSlice({
       .addCase(fetchProductBySlug.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(createProduct.fulfilled, (state, action) => {
+        state.list.unshift(action.payload);
+      })
+      .addCase(updateProduct.fulfilled, (state, action) => {
+        const index = state.list.findIndex((p) => p.slug === action.payload.slug);
+        if (index >= 0) state.list[index] = action.payload;
+      })
+      .addCase(deleteProduct.fulfilled, (state, action) => {
+        state.list = state.list.filter((p) => p.slug !== action.payload);
       });
   },
 });

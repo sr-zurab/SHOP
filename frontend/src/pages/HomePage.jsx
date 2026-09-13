@@ -42,37 +42,41 @@ function HomePage() {
   };
 
   return (
-    <div className="home-page">
-      <div className="home-toolbar">
-        <SearchBar onSearch={handleSearch} />
-        <SortSelect value={ordering} onChange={handleOrderingChange} />
+    <div className="home-page-layout">
+      <aside className="home-sidebar">
+        <CategoryList
+          categories={categories}
+          activeSlug={activeCategory}
+          onSelect={handleCategorySelect}
+        />
+      </aside>
+
+      <div className="home-content">
+        <div className="home-toolbar">
+          <SearchBar onSearch={handleSearch} />
+          <SortSelect value={ordering} onChange={handleOrderingChange} />
+        </div>
+
+        {loading && <p className="loading-text">Загрузка...</p>}
+
+        <div className="product-grid">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+
+        {!loading && products.length === 0 && (
+          <p className="empty-text">
+            {search ? `По запросу «${search}» ничего не найдено` : 'Товары не найдены'}
+          </p>
+        )}
+
+        {next && (
+          <button className="btn btn-outline load-more" onClick={() => setPage(page + 1)}>
+            Показать ещё
+          </button>
+        )}
       </div>
-
-      <CategoryList
-        categories={categories}
-        activeSlug={activeCategory}
-        onSelect={handleCategorySelect}
-      />
-
-      {loading && <p className="loading-text">Загрузка...</p>}
-
-      <div className="product-grid">
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
-
-      {!loading && products.length === 0 && (
-        <p className="empty-text">
-          {search ? `По запросу «${search}» ничего не найдено` : 'Товары не найдены'}
-        </p>
-      )}
-
-      {next && (
-        <button className="btn btn-outline load-more" onClick={() => setPage(page + 1)}>
-          Показать ещё
-        </button>
-      )}
     </div>
   );
 }

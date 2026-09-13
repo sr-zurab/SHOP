@@ -48,6 +48,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 class ProductDetailSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
+    main_image = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
@@ -57,9 +58,15 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'description', 'price',
-            'images', 'category', 'in_stock', 'stock', 'thumbnail',
+            'images', 'main_image', 'category', 'in_stock', 'stock', 'thumbnail',
             'average_rating', 'reviews_count',
         ]
+
+    def get_main_image(self, obj):
+        request = self.context.get('request')
+        if not obj.image:
+            return None
+        return request.build_absolute_uri(obj.image_detail.url) if request else obj.image_detail.url
 
     def get_thumbnail(self, obj):
         request = self.context.get('request')
@@ -76,3 +83,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_reviews_count(self, obj):
         return obj.reviews.count()
+
+class ProductWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'category', 'name', 'slug', 'description', 'price', 'available', 'stock', 'image']
