@@ -29,6 +29,30 @@ export const fetchChatMessages = createAsyncThunk(
   }
 );
 
+export const fetchChatUnreadCount = createAsyncThunk(
+  'chat/fetchUnreadCount',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await authFetch('/chat/unread-count/');
+      return await parseJsonOrThrow(res, 'Ошибка загрузки уведомлений чата');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+export const markChatRead = createAsyncThunk(
+  'chat/markRead',
+  async (roomId, { rejectWithValue }) => {
+    try {
+      const res = await authFetch(`/chat/rooms/${roomId}/mark-read/`, { method: 'POST' });
+      return await parseJsonOrThrow(res, 'Ошибка отметки сообщений чата');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 export const fetchManagerRooms = createAsyncThunk(
   'chat/fetchManagerRooms',
   async (_, { rejectWithValue }) => {
@@ -47,6 +71,7 @@ const chatSlice = createSlice({
     roomId: null,
     messages: [],
     managerRooms: [],
+    unreadCount: 0,
     connected: false,
     loading: false,
     error: null,
@@ -78,6 +103,12 @@ const chatSlice = createSlice({
       .addCase(fetchChatMessages.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+      .addCase(fetchChatUnreadCount.fulfilled, (state, action) => {
+        state.unreadCount = action.payload.count;
+      })
+      .addCase(markChatRead.fulfilled, (state) => {
+        state.unreadCount = 0;
       })
       .addCase(fetchManagerRooms.fulfilled, (state, action) => {
         state.managerRooms = action.payload;

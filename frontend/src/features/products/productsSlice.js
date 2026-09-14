@@ -19,6 +19,24 @@ export const fetchProducts = createAsyncThunk(
   }
 );
 
+export const fetchManagerProducts = createAsyncThunk(
+  'products/fetchManagerList',
+  async ({ category, search, ordering, page } = {}, { rejectWithValue }) => {
+    try {
+      const params = new URLSearchParams();
+      if (category) params.set('category', category);
+      if (search) params.set('search', search);
+      if (ordering) params.set('ordering', ordering);
+      if (page) params.set('page', page);
+
+      const res = await authFetch(`/products/manager-list/?${params.toString()}`);
+      return await parseJsonOrThrow(res, 'Ошибка загрузки товаров');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const fetchProductBySlug = createAsyncThunk(
   'products/fetchBySlug',
   async (slug, { rejectWithValue }) => {
@@ -37,7 +55,7 @@ export const createProduct = createAsyncThunk(
     try {
       const res = await authFetch('/products/', {
         method: 'POST',
-        body: formData, // FormData — не ставим Content-Type вручную, браузер сам выставит с boundary
+        body: formData,
       });
       return await parseJsonOrThrow(res, 'Ошибка создания товара');
     } catch (error) {
@@ -83,7 +101,11 @@ const productsSlice = createSlice({
     count: 0,
     next: null,
     previous: null,
-    current: null, // товар для detail-страницы
+    current: null,
+    managerList: [],
+    managerCount: 0,
+    managerNext: null,
+    managerLoading: false,
     loading: false,
     error: null,
   },
@@ -121,15 +143,28 @@ const productsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      .addCase(fetchManagerProducts.pending, (state) => {
+        state.managerLoading = true;
+      })
+      .addCase(fetchManagerProducts.fulfilled, (state, action) => {
+        state.managerList = action.payload.results;
+        state.managerCount = action.payload.count;
+        state.managerNext = action.payload.next;
+        state.managerLoading = false;
+      })
+      .addCase(fetchManagerProducts.rejected, (state, action) => {
+        state.managerLoading = false;
+        state.error = action.payload;
+      })
       .addCase(createProduct.fulfilled, (state, action) => {
-        state.list.unshift(action.payload);
+        state.managerList.unshift(action.payload);
       })
       .addCase(updateProduct.fulfilled, (state, action) => {
-        const index = state.list.findIndex((p) => p.slug === action.payload.slug);
-        if (index >= 0) state.list[index] = action.payload;
+        const index = state.managerList.findIndex((p) => p.slug === action.payload.slug);
+        if (index >= 0) state.managerList[index] = action.payload;
       })
       .addCase(deleteProduct.fulfilled, (state, action) => {
-        state.list = state.list.filter((p) => p.slug !== action.payload);
+        state.managerList = state.managerList.filter((p) => p.slug !== action.payload);
       });
   },
 });

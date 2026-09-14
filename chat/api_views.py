@@ -25,6 +25,18 @@ class ChatMessageListView(ListAPIView):
         return ChatMessage.objects.filter(room_id=room_id)
 
 
+class ChatUnreadCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        unread_count = ChatMessage.objects.filter(
+            room__user=request.user,
+            is_from_manager=True,
+            is_read=False,
+        ).count()
+        return Response({'count': unread_count})
+
+
 class ManagerChatRoomListView(ListAPIView):
     serializer_class = ChatRoomSerializer
     permission_classes = [IsAuthenticated]

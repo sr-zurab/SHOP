@@ -4,7 +4,7 @@ import WishlistButton from './WishlistButton';
 
 function ProductCard({ product }) {
   return (
-    <div className="product-card">
+    <div className={`product-card ${!product.in_stock ? 'out-of-stock' : ''}`}>
       <div className="product-card-image-wrap">
         <Link to={`/products/${product.slug}`} className="product-card-link">
           <div className="product-card-image">
@@ -14,6 +14,9 @@ function ProductCard({ product }) {
               <div className="product-card-no-image">Нет фото</div>
             )}
           </div>
+          {!product.in_stock && (
+            <span className="product-card-oos-badge">Нет в наличии</span>
+          )}
         </Link>
         <WishlistButton productId={product.id} />
       </div>

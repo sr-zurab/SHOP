@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchChatMessages, setRoomId, clearMessages } from '../features/chat/chatSlice';
-import { getWsToken } from '../features/chat/chatSlice';
+import {
+  fetchChatMessages, fetchChatUnreadCount, getWsToken, markChatRead,
+  setRoomId, clearMessages,
+} from '../features/chat/chatSlice';
 import useChatSocket from '../hooks/useChatSocket';
 import { MessageCircle, X, Send } from 'lucide-react';
 
 function ChatWidget() {
   const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
-  const { messages, roomId, connected } = useSelector((state) => state.chat);
+  const { messages, roomId, connected, unreadCount } = useSelector((state) => state.chat);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [wsToken, setWsToken] = useState(null);
@@ -32,11 +34,19 @@ function ChatWidget() {
           const newRoomId = result.payload.room_id;
           setWsToken(result.payload.ws_token);
           dispatch(setRoomId(newRoomId));
+          dispatch(markChatRead(newRoomId));
           dispatch(fetchChatMessages(newRoomId));
         }
       });
     }
   }, [open, isAuthenticated, roomId, dispatch]);
+
+  useEffect(() => {
+    if (open && roomId) {
+      dispatch(markChatRead(roomId));
+      dispatch(fetchChatUnreadCount());
+    }
+  }, [open, roomId, dispatch]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -99,6 +109,9 @@ function ChatWidget() {
       ) : (
         <button className="chat-widget-toggle" onClick={() => setOpen(true)} aria-label="Открыть чат">
           <MessageCircle size={24} />
+          {unreadCount > 0 && (
+            <span className="chat-widget-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          )}
         </button>
       )}
     </div>

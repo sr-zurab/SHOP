@@ -2,17 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  fetchProducts, createProduct, updateProduct, deleteProduct,
+  fetchManagerProducts, createProduct, updateProduct, deleteProduct,
 } from '../features/products/productsSlice';
 import {
   fetchCategories, createCategory, deleteCategory,
 } from '../features/categories/categoriesSlice';
+import useDebounce from '../hooks/useDebounce';
 import { Plus, Trash2, Edit2, X } from 'lucide-react';
 
 function ManagerProductsPage() {
   const dispatch = useDispatch();
   const { data: profile } = useSelector((state) => state.profile);
-  const { list: products } = useSelector((state) => state.products);
+  const { managerList: products, managerNext } = useSelector((state) => state.products);
   const { list: categories } = useSelector((state) => state.categories);
 
   const [editingProduct, setEditingProduct] = useState(null);
@@ -23,12 +24,32 @@ function ManagerProductsPage() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState('');
 
+  const [listSearch, setListSearch] = useState('');
+  const [listSort, setListSort] = useState('');
+  const [listCategory, setListCategory] = useState('');
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebounce(listSearch, 400);
+
   useEffect(() => {
     if (profile?.is_manager) {
-      dispatch(fetchProducts({}));
       dispatch(fetchCategories());
     }
   }, [dispatch, profile]);
+
+  useEffect(() => {
+    if (profile?.is_manager) {
+      dispatch(fetchManagerProducts({
+        category: listCategory,
+        search: debouncedSearch,
+        ordering: listSort,
+        page,
+      }));
+    }
+  }, [dispatch, profile, debouncedSearch, listSort, listCategory, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, listSort, listCategory]);
 
   const resetForm = () => {
     setForm({ name: '', slug: '', description: '', price: '', stock: '', category: '', available: true });
@@ -76,7 +97,12 @@ function ManagerProductsPage() {
       await dispatch(createProduct(formData));
     }
     resetForm();
-    dispatch(fetchProducts({}));
+    dispatch(fetchManagerProducts({
+      category: listCategory,
+      search: debouncedSearch,
+      ordering: listSort,
+      page,
+    }));
   };
 
   const handleDelete = async (slug) => {
@@ -94,8 +120,10 @@ function ManagerProductsPage() {
   };
 
   const handleDeleteCategory = async (slug) => {
-    if (window.confirm('Удалить категорию? Товары в ней нельзя будет удалить, пока не смените категорию.')) {
-      await dispatch(deleteCategory(slug));
+    if (!window.confirm('Удалить категорию?')) return;
+    const result = await dispatch(deleteCategory(slug));
+    if (deleteCategory.rejected.match(result)) {
+      alert(result.payload || 'Не удалось удалить категорию');
     }
   };
 
@@ -181,11 +209,7 @@ function ManagerProductsPage() {
 
           <label>
             Главная картинка
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImageFile(e.target.files[0])}
-            />
+            <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} />
           </label>
 
           <label>
@@ -210,7 +234,39 @@ function ManagerProductsPage() {
           </div>
         </form>
 
+        <div className="manager-list-toolbar">
+          <input
+            className="manager-list-search"
+            placeholder="Найти товар по названию..."
+            value={listSearch}
+            onChange={(e) => setListSearch(e.target.value)}
+          />
+          <select
+            className="manager-list-sort"
+            value={listSort}
+            onChange={(e) => setListSort(e.target.value)}
+          >
+            <option value="">По названию</option>
+            <option value="newest">Сначала новые</option>
+            <option value="price_asc">Цена: сначала дешевле</option>
+            <option value="price_desc">Цена: сначала дороже</option>
+          </select>
+          <select
+            className="manager-list-category"
+            value={listCategory}
+            onChange={(e) => setListCategory(e.target.value)}
+          >
+            <option value="">Все категории</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.slug}>{category.name}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="manager-products-list">
+          {products.length === 0 && (
+            <p className="empty-text">Ничего не найдено</p>
+          )}
           {products.map((product) => (
             <div key={product.id} className="manager-product-row">
               {product.thumbnail ? (
@@ -233,6 +289,12 @@ function ManagerProductsPage() {
             </div>
           ))}
         </div>
+
+        {managerNext && (
+          <button className="btn btn-outline load-more" onClick={() => setPage(page + 1)}>
+            Показать ещё
+          </button>
+        )}
       </div>
 
       <div className="manager-products-sidebar">

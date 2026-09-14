@@ -1,11 +1,14 @@
 from django.db.models import Avg, Count
-from rest_framework import viewsets
+from django.db.models.deletion import ProtectedError
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 from .models import Product, Category, ProductImage
 from .serializers import (
     ProductListSerializer, ProductDetailSerializer, CategorySerializer,
-    ProductWriteSerializer,
+    ProductWriteSerializer, ManagerProductSerializer,
 )
 
 ORDERING_MAP = {
@@ -23,6 +26,15 @@ class ProductPagination(PageNumberPagination):
     max_page_size = 100
 
 
+class IsManager(IsAuthenticated):
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, 'is_manager', False)
+        )
+
+
 class IsManagerOrReadOnly(IsAuthenticated):
     def has_permission(self, request, view):
         if request.method in ('GET', 'HEAD', 'OPTIONS'):
@@ -38,7 +50,22 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [AllowAny()]
+        if self.action == 'manager_list':
+            return [IsManager()]
         return [IsManagerOrReadOnly()]
+
+    @action(detail=False, methods=['get'], url_path='manager-list')
+    def manager_list(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        serializer = ManagerProductSerializer(
+            page if page is not None else queryset,
+            many=True,
+            context=self.get_serializer_context(),
+        )
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
 
     def get_queryset(self):
         qs = Product.objects.select_related('category')
@@ -69,6 +96,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return ProductListSerializer
+        if self.action == 'manager_list':
+            return ManagerProductSerializer
         if self.action in ('create', 'update', 'partial_update'):
             return ProductWriteSerializer
         return ProductDetailSerializer
@@ -101,3 +130,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return [AllowAny()]
         return [IsManagerOrReadOnly()]
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {'detail': 'Нельзя удалить категорию: в ней есть товары'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )

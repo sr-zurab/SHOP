@@ -88,3 +88,25 @@ class ProductWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 'category', 'name', 'slug', 'description', 'price', 'available', 'stock', 'image']
+
+
+class ManagerProductSerializer(serializers.ModelSerializer):
+    thumbnail = serializers.SerializerMethodField()
+    category = CategorySerializer(read_only=True)
+    in_stock = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'name', 'slug', 'description', 'price', 'stock',
+            'available', 'thumbnail', 'category', 'in_stock',
+        ]
+
+    def get_thumbnail(self, obj):
+        request = self.context.get('request')
+        if not obj.image:
+            return None
+        return request.build_absolute_uri(obj.thumbnail.url) if request else obj.thumbnail.url
+
+    def get_in_stock(self, obj):
+        return obj.stock > 0

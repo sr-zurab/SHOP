@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { ShoppingCart, User, Heart, Package, Menu, X, Headset } from 'lucide-react';
+import { ShoppingCart, User, Heart, Package, Menu, X } from 'lucide-react';
 import AuthForm from './AuthForm';
 import LogoutButton from './LogoutButton';
 
 function Header() {
   const { isAuthenticated } = useSelector((state) => state.auth);
-  const { data: profile } = useSelector((state) => state.profile);
   const cartCount = useSelector((state) =>
     state.cart.data.items.reduce((sum, item) => sum + item.quantity, 0)
   );
+  const wishlistCount = useSelector((state) => state.wishlist.productIds.length);
+  const ordersCount = useSelector((state) => state.orders.list.length);
+  const formatCount = (count) => (count > 99 ? '99+' : count);
+
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -35,7 +38,7 @@ function Header() {
           <Link to="/cart" className="icon-link cart-link" aria-label="Корзина" onClick={() => setMenuOpen(false)}>
             <ShoppingCart size={20} />
             <span className="icon-link-label">Корзина</span>
-            {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+            {cartCount > 0 && <span className="cart-badge">{formatCount(cartCount)}</span>}
           </Link>
 
           {isAuthenticated && (
@@ -47,19 +50,14 @@ function Header() {
               <Link to="/wishlist" className="icon-link" aria-label="Избранное" onClick={() => setMenuOpen(false)}>
                 <Heart size={20} />
                 <span className="icon-link-label">Избранное</span>
+                {wishlistCount > 0 && <span className="cart-badge">{formatCount(wishlistCount)}</span>}
               </Link>
               <Link to="/orders" className="icon-link" aria-label="Мои заказы" onClick={() => setMenuOpen(false)}>
                 <Package size={20} />
                 <span className="icon-link-label">Мои заказы</span>
+                {ordersCount > 0 && <span className="cart-badge">{formatCount(ordersCount)}</span>}
               </Link>
             </>
-          )}
-
-          {profile?.is_manager && (
-            <Link to="/manager/chats" className="icon-link" aria-label="Чаты поддержки" onClick={() => setMenuOpen(false)}>
-              <Headset size={20} />
-              <span className="icon-link-label">Чаты поддержки</span>
-            </Link>
           )}
 
           {isAuthenticated ? (

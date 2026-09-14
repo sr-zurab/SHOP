@@ -35,7 +35,8 @@ export const deleteCategory = createAsyncThunk(
     try {
       const res = await authFetch(`/categories/${slug}/`, { method: 'DELETE' });
       if (!res.ok && res.status !== 204) {
-        throw new Error('Ошибка удаления категории');
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Ошибка удаления категории');
       }
       return slug;
     } catch (error) {
@@ -59,7 +60,7 @@ const categoriesSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
-        state.list = action.payload.results || action.payload; // на случай без пагинации
+        state.list = action.payload.results || action.payload;
         state.loading = false;
       })
       .addCase(fetchCategories.rejected, (state, action) => {

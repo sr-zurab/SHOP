@@ -11,13 +11,15 @@ import OrderDetailPage from './pages/OrderDetailPage';
 import WishlistPage from './pages/WishlistPage';
 import ProfilePage from './pages/ProfilePage';
 import ManagerChatPage from './pages/ManagerChatPage';
+import ManagerProductsPage from './pages/ManagerProductsPage';
 import ChatWidget from './components/ChatWidget';
 import useTokenRefreshTimer from './hooks/useTokenRefreshTimer';
 import { fetchProfile } from './features/profile/profileSlice';
+import { fetchWishlist } from './features/wishlist/wishlistSlice';
+import { fetchOrders } from './features/orders/ordersSlice';
 import ManagerLoginPage from './pages/ManagerLoginPage';
 import ManagerHeader from './components/ManagerHeader';
-import ManagerProductsPage from './pages/ManagerProductsPage';
-
+import { fetchChatUnreadCount } from './features/chat/chatSlice';
 
 function AppContent() {
   useTokenRefreshTimer();
@@ -31,7 +33,18 @@ function AppContent() {
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchProfile());
+      dispatch(fetchWishlist());
+      dispatch(fetchOrders());
+      dispatch(fetchChatUnreadCount());
     }
+  }, [isAuthenticated, dispatch]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    const intervalId = window.setInterval(() => {
+      dispatch(fetchChatUnreadCount());
+    }, 15000);
+    return () => window.clearInterval(intervalId);
   }, [isAuthenticated, dispatch]);
 
   if (isAuthenticated && profile?.is_manager && !isManagerArea) {
@@ -52,8 +65,8 @@ function AppContent() {
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/manager/chats" element={<ManagerChatPage />} />
-          <Route path="/manager/login" element={<ManagerLoginPage />} />
           <Route path="/manager/products" element={<ManagerProductsPage />} />
+          <Route path="/manager/login" element={<ManagerLoginPage />} />
         </Routes>
       </main>
       {!isManagerLogin && !isManagerArea && <ChatWidget />}

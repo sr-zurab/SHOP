@@ -58,3 +58,24 @@
 .add-to-cart-btn {
   width: 100%;
 }
+
+.product-card.out-of-stock .product-card-image img {
+  filter: grayscale(0.6);
+  opacity: 0.6;
+}
+
+.product-card.out-of-stock .product-card-name,
+.product-card.out-of-stock .product-card-price {
+  color: #999;
+}
+
+.product-card-oos-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
