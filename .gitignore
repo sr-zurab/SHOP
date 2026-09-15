@@ -7,3 +7,5 @@ db.sqlite3
 media/
 .idea/
 .vscode/
+shop_db
+*.sqlite3
