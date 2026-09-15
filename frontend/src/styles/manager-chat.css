@@ -369,3 +369,267 @@
   font-size: 14px;
   background: white;
 }
+
+.chat-widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-close-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #555;
+}
+
+.chat-close-btn:hover {
+  background: #f0f0f0;
+}
+
+.manager-header-badge {
+  background: #d9363e;
+  color: white;
+  font-size: 10px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+}
+
+.manager-chat-room-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.manager-chat-room-unread {
+  background: #d9363e;
+  color: white;
+  font-size: 11px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manager-orders-page {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: calc(100vh - 64px);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.manager-orders-sidebar {
+  border-right: 1px solid #eee;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.manager-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.manager-order-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  gap: 4px;
+}
+
+.manager-order-item:hover,
+.manager-order-item.active {
+  background: #f0f0f0;
+}
+
+.manager-order-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.manager-order-item-id {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.manager-order-item-name {
+  font-size: 13px;
+  color: #333;
+}
+
+.manager-order-item-meta {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 12px;
+  color: #999;
+}
+
+.manager-orders-detail {
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.manager-order-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.manager-order-detail-header h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.manager-order-detail-sub {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+}
+
+.manager-order-status-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.manager-order-status-control label {
+  font-size: 12px;
+  color: #888;
+}
+
+.manager-order-status-control select {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+}
+
+.manager-order-error {
+  color: #721c24;
+  background: #f8d7da;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.manager-order-section {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.manager-order-section h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.manager-order-section p {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.manager-order-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.manager-order-comment {
+  padding: 10px 12px;
+  background: #f7f7f8;
+  border-radius: 8px;
+}
+
+.manager-order-comment p {
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+
+.manager-order-comment-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #888;
+}
+
+.manager-order-comment-meta strong {
+  color: #333;
+}
+
+.manager-order-comment-form {
+  display: flex;
+  gap: 8px;
+}
+
+.manager-order-comment-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.manager-order-comment-form button {
+  width: 42px;
+  border: none;
+  background: #1a1a1a;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manager-order-comment-form button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 800px) {
+  .manager-orders-page {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .manager-orders-sidebar {
+    border-right: none;
+    border-bottom: 1px solid #eee;
+    max-height: 40vh;
+  }
+}

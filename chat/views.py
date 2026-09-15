@@ -18,6 +18,11 @@ class GetWsTokenView(APIView):
             room = get_object_or_404(ChatRoom, id=room_id)
             if not request.user.is_manager:
                 raise PermissionDenied('Нет доступа')
+        elif request.user.is_manager:
+            # Token only for manager-notifications WS (no room needed)
+            ws_token = secrets.token_urlsafe(32)
+            cache.set(f'ws_token:{ws_token}', request.user.id, timeout=30)
+            return Response({'ws_token': ws_token, 'room_id': None})
         else:
             room, _ = ChatRoom.objects.get_or_create(user=request.user)
 

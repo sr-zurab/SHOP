@@ -146,4 +146,17 @@ CACHES = {
     }
 }
 
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/2'
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/2'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+CELERY_BEAT_SCHEDULE = {
+    'close-stale-chats-every-hour': {
+        'task': 'chat.tasks.close_stale_chats',
+        'schedule': 3600.0,  # каждый час
+    },
+}
+
 ASGI_APPLICATION = 'frame_shop.asgi.application'

@@ -38,7 +38,19 @@ export const fetchChatUnreadCount = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  },
+  }
+);
+
+export const fetchManagerUnreadCount = createAsyncThunk(
+  'chat/fetchManagerUnreadCount',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await authFetch('/chat/manager/unread-count/');
+      return await parseJsonOrThrow(res, 'Ошибка загрузки счётчика');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
 );
 
 export const markChatRead = createAsyncThunk(
@@ -50,7 +62,31 @@ export const markChatRead = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message);
     }
-  },
+  }
+);
+
+export const closeChatRoom = createAsyncThunk(
+  'chat/closeRoom',
+  async (roomId, { rejectWithValue }) => {
+    try {
+      const res = await authFetch(`/chat/rooms/${roomId}/close/`, { method: 'POST' });
+      return await parseJsonOrThrow(res, 'Ошибка закрытия чата');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const assignChatRoom = createAsyncThunk(
+  'chat/assignRoom',
+  async (roomId, { rejectWithValue }) => {
+    try {
+      const res = await authFetch(`/chat/rooms/${roomId}/assign/`, { method: 'POST' });
+      return await parseJsonOrThrow(res, 'Ошибка назначения чата');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
 );
 
 export const fetchManagerRooms = createAsyncThunk(
@@ -72,6 +108,7 @@ const chatSlice = createSlice({
     messages: [],
     managerRooms: [],
     unreadCount: 0,
+    managerUnreadCount: 0,
     connected: false,
     loading: false,
     error: null,
@@ -107,8 +144,18 @@ const chatSlice = createSlice({
       .addCase(fetchChatUnreadCount.fulfilled, (state, action) => {
         state.unreadCount = action.payload.count;
       })
+      .addCase(fetchManagerUnreadCount.fulfilled, (state, action) => {
+        state.managerUnreadCount = action.payload.count;
+      })
       .addCase(markChatRead.fulfilled, (state) => {
         state.unreadCount = 0;
+      })
+      .addCase(closeChatRoom.fulfilled, (state, action) => {
+        state.managerRooms = state.managerRooms.filter((r) => r.id !== action.payload.id);
+        if (state.roomId === action.payload.id) {
+          state.roomId = null;
+          state.messages = [];
+        }
       })
       .addCase(fetchManagerRooms.fulfilled, (state, action) => {
         state.managerRooms = action.payload;

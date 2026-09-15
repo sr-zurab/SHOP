@@ -12,6 +12,7 @@ import WishlistPage from './pages/WishlistPage';
 import ProfilePage from './pages/ProfilePage';
 import ManagerChatPage from './pages/ManagerChatPage';
 import ManagerProductsPage from './pages/ManagerProductsPage';
+import ManagerOrdersPage from './pages/ManagerOrdersPage';
 import ChatWidget from './components/ChatWidget';
 import useTokenRefreshTimer from './hooks/useTokenRefreshTimer';
 import { fetchProfile } from './features/profile/profileSlice';
@@ -65,6 +66,7 @@ function AppContent() {
           <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/manager/chats" element={<ManagerChatPage />} />
+          <Route path="/manager/orders" element={<ManagerOrdersPage />} />
           <Route path="/manager/products" element={<ManagerProductsPage />} />
           <Route path="/manager/login" element={<ManagerLoginPage />} />
         </Routes>

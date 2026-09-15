@@ -26,10 +26,8 @@ function OrderDetailPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    if (!order) {
-      dispatch(fetchOrderById(id));
-    }
-  }, [dispatch, id, order]);
+    dispatch(fetchOrderById(id));
+  }, [dispatch, id]);
 
   const handleCancel = async () => {
     setCancelling(true);
@@ -85,6 +83,29 @@ function OrderDetailPage() {
           <span>Итого:</span>
           <strong>{order.total_price} ₽</strong>
         </div>
+      </div>
+
+      <div className="order-detail-section">
+        <h2>Комментарии менеджера</h2>
+        {(order.comments || []).length === 0 ? (
+          <p className="empty-text">Пока нет комментариев</p>
+        ) : (
+          <div className="order-comments-list">
+            {(order.comments || []).map((comment) => (
+              <div key={comment.id} className="order-comment">
+                <div className="order-comment-meta">
+                  <strong>{comment.author_username || 'Менеджер'}</strong>
+                  <span>
+                    {new Date(comment.created).toLocaleString('ru-RU', {
+                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                    })}
+                  </span>
+                </div>
+                <p>{comment.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {canCancel && (

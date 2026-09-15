@@ -108,6 +108,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def save_message(self, text):
         room = ChatRoom.objects.get(id=self.room_id)
+        if not self.user.is_manager and room.is_closed:
+            room.is_closed = False
+            room.assigned_manager = None
+            room.save(update_fields=['is_closed', 'assigned_manager'])
         return ChatMessage.objects.create(
             room=room,
             sender=self.user,

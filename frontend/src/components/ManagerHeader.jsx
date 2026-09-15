@@ -1,12 +1,26 @@
-import { useDispatch } from 'react-redux';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { LogOut, MessageSquare, Package } from 'lucide-react';
+import { LogOut, MessageSquare, Package, ShoppingBag } from 'lucide-react';
 import { logout } from '../features/auth/authSlice';
+import { fetchManagerUnreadCount } from '../features/chat/chatSlice';
+import useManagerNotificationsSocket from '../hooks/useManagerNotificationsSocket';
 
 function ManagerHeader() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const unreadCount = useSelector((state) => state.chat.managerUnreadCount);
+
+  useManagerNotificationsSocket(true);
+
+  useEffect(() => {
+    dispatch(fetchManagerUnreadCount());
+    const intervalId = window.setInterval(() => {
+      dispatch(fetchManagerUnreadCount());
+    }, 15000);
+    return () => window.clearInterval(intervalId);
+  }, [dispatch]);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -26,6 +40,16 @@ function ManagerHeader() {
           className={`manager-header-link ${location.pathname === '/manager/chats' ? 'active' : ''}`}
         >
           Чаты
+          {unreadCount > 0 && (
+            <span className="manager-header-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          )}
+        </Link>
+        <Link
+          to="/manager/orders"
+          className={`manager-header-link ${location.pathname === '/manager/orders' ? 'active' : ''}`}
+        >
+          <ShoppingBag size={16} />
+          Заказы
         </Link>
         <Link
           to="/manager/products"

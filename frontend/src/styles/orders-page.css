@@ -122,6 +122,36 @@
   flex-wrap: wrap;
 }
 
+.order-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-comment {
+  padding: 10px 12px;
+  background: #f7f7f8;
+  border-radius: 8px;
+}
+
+.order-comment p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.order-comment-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #888;
+}
+
+.order-comment-meta strong {
+  color: #333;
+}
+
 .orders-link {
   text-decoration: none;
   color: #1a1a1a;

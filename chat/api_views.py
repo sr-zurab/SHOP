@@ -37,6 +37,21 @@ class ChatUnreadCountView(APIView):
         return Response({'count': unread_count})
 
 
+class ManagerUnreadCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_manager:
+            return Response({'count': 0})
+
+        unread_count = ChatMessage.objects.filter(
+            room__is_closed=False,
+            is_from_manager=False,
+            is_read=False,
+        ).count()
+        return Response({'count': unread_count})
+
+
 class ManagerChatRoomListView(ListAPIView):
     serializer_class = ChatRoomSerializer
     permission_classes = [IsAuthenticated]
@@ -85,7 +100,8 @@ class CloseChatRoomView(APIView):
             raise PermissionDenied('Нет доступа к этому чату')
 
         room.is_closed = True
-        room.save(update_fields=['is_closed'])
+        room.assigned_manager = None
+        room.save(update_fields=['is_closed', 'assigned_manager'])
 
         return Response(ChatRoomSerializer(room).data)
 

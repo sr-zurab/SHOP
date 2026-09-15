@@ -54,3 +54,19 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f'{self.product_name} x{self.quantity}'
+
+
+class OrderComment(models.Model):
+    order = models.ForeignKey(Order, related_name='comments', on_delete=models.CASCADE)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, related_name='order_comments',
+    )
+    text = models.CharField(max_length=2000)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created']
+
+    def __str__(self):
+        return f'Комментарий к заказу #{self.order_id}'

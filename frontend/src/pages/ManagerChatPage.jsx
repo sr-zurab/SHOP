@@ -2,14 +2,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import {
-  fetchManagerRooms,
-  fetchChatMessages,
-  setRoomId,
-  clearMessages,
-  getWsToken,
+  fetchManagerRooms, fetchChatMessages, setRoomId, clearMessages,
+  getWsToken, assignChatRoom, closeChatRoom, markChatRead, fetchManagerUnreadCount,
 } from '../features/chat/chatSlice';
 import useChatSocket from '../hooks/useChatSocket';
-import { authFetch } from '../api/authFetch';
 import { Send } from 'lucide-react';
 
 function ManagerChatPage() {
@@ -41,8 +37,10 @@ function ManagerChatPage() {
     dispatch(clearMessages());
     dispatch(setRoomId(room.id));
 
-    await authFetch(`/chat/rooms/${room.id}/assign/`, { method: 'POST' });
+    await dispatch(assignChatRoom(room.id));
+    await dispatch(markChatRead(room.id));
     dispatch(fetchManagerRooms());
+    dispatch(fetchManagerUnreadCount());
 
     const result = await dispatch(getWsToken(room.id));
     if (getWsToken.fulfilled.match(result)) {
@@ -57,6 +55,13 @@ function ManagerChatPage() {
     if (!text.trim()) return;
     sendMessage(text.trim());
     setText('');
+  };
+
+  const handleCloseChat = async () => {
+    if (!roomId) return;
+    if (!window.confirm('Закрыть чат?')) return;
+    await dispatch(closeChatRoom(roomId));
+    setWsToken(null);
   };
 
   if (!profile?.is_manager) {
@@ -81,11 +86,16 @@ function ManagerChatPage() {
           >
             <div className="manager-chat-room-top">
               <span className="manager-chat-room-username">{room.username}</span>
-              {room.assigned_manager_username && (
-                <span className="manager-chat-room-badge">
-                  В работе: {room.assigned_manager_username}
-                </span>
-              )}
+              <div className="manager-chat-room-badges">
+                {room.unread_count > 0 && (
+                  <span className="manager-chat-room-unread">{room.unread_count}</span>
+                )}
+                {room.assigned_manager_username && (
+                  <span className="manager-chat-room-badge">
+                    В работе: {room.assigned_manager_username}
+                  </span>
+                )}
+              </div>
             </div>
             {room.last_message && (
               <span className="manager-chat-room-preview">{room.last_message.text}</span>
@@ -99,6 +109,9 @@ function ManagerChatPage() {
           <>
             <div className="chat-widget-header">
               <span>Чат {connected ? '🟢' : '🔴'}</span>
+              <button className="chat-close-btn" onClick={handleCloseChat}>
+                Закрыть чат
+              </button>
             </div>
 
             <div className="chat-widget-messages">
