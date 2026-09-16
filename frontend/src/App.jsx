@@ -32,9 +32,9 @@ function AppContent() {
   const isManagerArea = location.pathname.startsWith('/manager/');
 
   useEffect(() => {
+    dispatch(fetchWishlist());
     if (isAuthenticated) {
       dispatch(fetchProfile());
-      dispatch(fetchWishlist());
       dispatch(fetchOrders());
       dispatch(fetchChatUnreadCount());
     }

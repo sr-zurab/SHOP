@@ -4,6 +4,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from .serializers import RegisterSerializer, ProfileSerializer, ChangePasswordSerializer
 from cart.utils import merge_cart
+from wishlist.utils import merge_wishlist
 from rest_framework.views import APIView
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -21,6 +22,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             serializer.is_valid(raise_exception=True)
             user = serializer.user
             merge_cart(request, user)
+            merge_wishlist(request, user)
 
         return response
 

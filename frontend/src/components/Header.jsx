@@ -41,16 +41,17 @@ function Header() {
             {cartCount > 0 && <span className="cart-badge">{formatCount(cartCount)}</span>}
           </Link>
 
+          <Link to="/wishlist" className="icon-link" aria-label="Избранное" onClick={() => setMenuOpen(false)}>
+            <Heart size={20} />
+            <span className="icon-link-label">Избранное</span>
+            {wishlistCount > 0 && <span className="cart-badge">{formatCount(wishlistCount)}</span>}
+          </Link>
+
           {isAuthenticated && (
             <>
               <Link to="/profile" className="icon-link" aria-label="Профиль" onClick={() => setMenuOpen(false)}>
                 <User size={20} />
                 <span className="icon-link-label">Профиль</span>
-              </Link>
-              <Link to="/wishlist" className="icon-link" aria-label="Избранное" onClick={() => setMenuOpen(false)}>
-                <Heart size={20} />
-                <span className="icon-link-label">Избранное</span>
-                {wishlistCount > 0 && <span className="cart-badge">{formatCount(wishlistCount)}</span>}
               </Link>
               <Link to="/orders" className="icon-link" aria-label="Мои заказы" onClick={() => setMenuOpen(false)}>
                 <Package size={20} />

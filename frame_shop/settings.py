@@ -158,5 +158,3 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 3600.0,  # каждый час
     },
 }
-
-ASGI_APPLICATION = 'frame_shop.asgi.application'

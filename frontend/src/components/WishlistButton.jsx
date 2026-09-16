@@ -3,10 +3,7 @@ import { toggleWishlist } from '../features/wishlist/wishlistSlice';
 
 function WishlistButton({ productId }) {
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state) => state.auth);
   const inWishlist = useSelector((state) => state.wishlist.productIds.includes(productId));
-
-  if (!isAuthenticated) return null;
 
   const handleClick = (e) => {
     e.preventDefault(); // чтобы клик не срабатывал как переход по ссылке карточки

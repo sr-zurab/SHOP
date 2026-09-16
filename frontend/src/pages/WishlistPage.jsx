@@ -10,19 +10,8 @@ function WishlistPage() {
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      dispatch(fetchWishlist());
-    }
+    dispatch(fetchWishlist());
   }, [dispatch, isAuthenticated]);
-
-  if (!isAuthenticated) {
-    return (
-      <div className="wishlist-page">
-        <p className="empty-text">Войдите, чтобы видеть избранное</p>
-        <Link to="/" className="btn btn-primary">На главную</Link>
-      </div>
-    );
-  }
 
   if (loading) return <p className="loading-text">Загрузка...</p>;
 
