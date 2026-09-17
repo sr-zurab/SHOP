@@ -443,6 +443,21 @@
   gap: 4px;
 }
 
+.manager-orders-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+  color: #777;
+  font-size: 12px;
+}
+
+.manager-orders-pagination .btn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .manager-order-item {
   display: flex;
   flex-direction: column;

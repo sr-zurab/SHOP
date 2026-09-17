@@ -30,6 +30,7 @@ class Order(models.Model):
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+    manager_seen = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-created']

@@ -61,14 +61,39 @@ export const cancelOrder = createAsyncThunk(
 
 export const fetchManagerOrders = createAsyncThunk(
   'orders/fetchManager',
-  async ({ status = '', search = '' } = {}, { rejectWithValue }) => {
+  async ({ status = '', search = '', page = 1 } = {}, { rejectWithValue }) => {
     try {
       const params = new URLSearchParams();
       if (status) params.set('status', status);
       if (search) params.set('search', search);
+      if (page) params.set('page', page);
       const query = params.toString();
       const res = await authFetch(`/orders/manager/${query ? `?${query}` : ''}`);
       return await parseJsonOrThrow(res, 'Ошибка загрузки заказов');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const fetchManagerOrderUnreadCount = createAsyncThunk(
+  'orders/fetchManagerUnreadCount',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await authFetch('/orders/manager/unread-count/');
+      return await parseJsonOrThrow(res, 'Ошибка загрузки счётчика заказов');
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const markManagerOrdersRead = createAsyncThunk(
+  'orders/markManagerRead',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await authFetch('/orders/manager/mark-read/', { method: 'POST' });
+      return await parseJsonOrThrow(res, 'Ошибка обновления уведомлений заказов');
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -121,6 +146,10 @@ const ordersSlice = createSlice({
   initialState: {
     list: [],
     managerList: [],
+    managerCount: 0,
+    managerNext: null,
+    managerPrevious: null,
+    managerUnreadCount: 0,
     managerLoading: false,
     lastCreated: null,
     loading: false,
@@ -181,12 +210,21 @@ const ordersSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchManagerOrders.fulfilled, (state, action) => {
-        state.managerList = action.payload;
+        state.managerList = action.payload.results;
+        state.managerCount = action.payload.count;
+        state.managerNext = action.payload.next;
+        state.managerPrevious = action.payload.previous;
         state.managerLoading = false;
       })
       .addCase(fetchManagerOrders.rejected, (state, action) => {
         state.managerLoading = false;
         state.error = action.payload;
+      })
+      .addCase(fetchManagerOrderUnreadCount.fulfilled, (state, action) => {
+        state.managerUnreadCount = action.payload.count;
+      })
+      .addCase(markManagerOrdersRead.fulfilled, (state) => {
+        state.managerUnreadCount = 0;
       })
       .addCase(updateManagerOrderStatus.fulfilled, (state, action) => {
         upsertOrder(state.managerList, action.payload);

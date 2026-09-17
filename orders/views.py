@@ -1,9 +1,12 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.db.models import Q
+import logging
+from asgiref.sync import async_to_sync
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,6 +18,14 @@ from .serializers import (
     OrderSerializer, CreateOrderSerializer, ManagerOrderSerializer,
     UpdateOrderStatusSerializer, CreateOrderCommentSerializer, OrderCommentSerializer,
 )
+
+logger = logging.getLogger(__name__)
+
+
+class ManagerOrderPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 def restore_order_stock(order):
@@ -80,7 +91,22 @@ class OrderViewSet(viewsets.ViewSet):
             cart_items.delete()
 
         order = Order.objects.prefetch_related('items', 'comments', 'comments__author').get(pk=order.pk)
+        transaction.on_commit(self._notify_managers_about_order)
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def _notify_managers_about_order():
+        from channels.layers import get_channel_layer
+
+        channel_layer = get_channel_layer()
+        if channel_layer is not None:
+            try:
+                async_to_sync(channel_layer.group_send)(
+                    'managers_notifications',
+                    {'type': 'manager_order_created'},
+                )
+            except Exception:
+                logger.exception('Не удалось отправить менеджерам уведомление о новом заказе')
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
@@ -103,6 +129,7 @@ class OrderViewSet(viewsets.ViewSet):
 
 class ManagerOrderListView(APIView):
     permission_classes = [IsManager]
+    pagination_class = ManagerOrderPagination
 
     def get(self, request):
         qs = Order.objects.select_related('user').prefetch_related(
@@ -126,7 +153,25 @@ class ManagerOrderListView(APIView):
                 filters |= Q(id=int(order_id))
             qs = qs.filter(filters)
 
-        return Response(ManagerOrderSerializer(qs, many=True).data)
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(qs, request, view=self)
+        serializer = ManagerOrderSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+class ManagerOrderUnreadCountView(APIView):
+    permission_classes = [IsManager]
+
+    def get(self, request):
+        return Response({'count': Order.objects.filter(manager_seen=False).count()})
+
+
+class MarkManagerOrdersReadView(APIView):
+    permission_classes = [IsManager]
+
+    def post(self, request):
+        Order.objects.filter(manager_seen=False).update(manager_seen=True)
+        return Response({'count': 0})
 
 
 class ManagerOrderDetailView(APIView):

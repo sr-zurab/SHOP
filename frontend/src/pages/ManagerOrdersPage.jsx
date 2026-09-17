@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchManagerOrders, updateManagerOrderStatus, addManagerOrderComment,
+  markManagerOrdersRead,
 } from '../features/orders/ordersSlice';
 import useDebounce from '../hooks/useDebounce';
 import { Send } from 'lucide-react';
@@ -25,7 +26,9 @@ const STATUS_OPTIONS = Object.entries(STATUS_LABELS);
 function ManagerOrdersPage() {
   const dispatch = useDispatch();
   const { data: profile } = useSelector((state) => state.profile);
-  const { managerList: orders, managerLoading, error } = useSelector((state) => state.orders);
+  const {
+    managerList: orders, managerLoading, managerCount, managerNext, managerPrevious, error,
+  } = useSelector((state) => state.orders);
 
   const [selectedId, setSelectedId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
@@ -33,21 +36,22 @@ function ManagerOrdersPage() {
   const [commentText, setCommentText] = useState('');
   const [savingStatus, setSavingStatus] = useState(false);
   const [sendingComment, setSendingComment] = useState(false);
+  const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 400);
 
   useEffect(() => {
     if (profile?.is_manager) {
-      dispatch(fetchManagerOrders({ status: statusFilter, search: debouncedSearch }));
+      dispatch(fetchManagerOrders({ status: statusFilter, search: debouncedSearch, page }));
     }
-  }, [dispatch, profile, statusFilter, debouncedSearch]);
-
-  const selected = orders.find((o) => o.id === selectedId) || null;
+  }, [dispatch, profile, statusFilter, debouncedSearch, page]);
 
   useEffect(() => {
-    if (selectedId && !orders.some((o) => o.id === selectedId)) {
-      setSelectedId(null);
+    if (profile?.is_manager) {
+      dispatch(markManagerOrdersRead());
     }
-  }, [orders, selectedId]);
+  }, [dispatch, profile]);
+
+  const selected = orders.find((o) => o.id === selectedId) || null;
 
   const handleStatusChange = async (e) => {
     if (!selected) return;
@@ -92,13 +96,19 @@ function ManagerOrdersPage() {
           <input
             className="manager-list-search"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Поиск по имени, email, телефону..."
           />
           <select
             className="manager-list-sort"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
           >
             <option value="">Все статусы</option>
             {STATUS_OPTIONS.map(([value, label]) => (
@@ -138,6 +148,27 @@ function ManagerOrdersPage() {
             </button>
           ))}
         </div>
+        {managerCount > 0 && (
+          <div className="manager-orders-pagination">
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setPage((current) => current - 1)}
+              disabled={!managerPrevious || managerLoading}
+            >
+              Назад
+            </button>
+            <span>Страница {page}</span>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setPage((current) => current + 1)}
+              disabled={!managerNext || managerLoading}
+            >
+              Вперёд
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="manager-orders-detail">

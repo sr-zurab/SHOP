@@ -4,6 +4,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { LogOut, MessageSquare, Package, ShoppingBag } from 'lucide-react';
 import { logout } from '../features/auth/authSlice';
 import { fetchManagerUnreadCount } from '../features/chat/chatSlice';
+import { fetchManagerOrderUnreadCount } from '../features/orders/ordersSlice';
 import useManagerNotificationsSocket from '../hooks/useManagerNotificationsSocket';
 
 function ManagerHeader() {
@@ -11,13 +12,16 @@ function ManagerHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const unreadCount = useSelector((state) => state.chat.managerUnreadCount);
+  const orderUnreadCount = useSelector((state) => state.orders.managerUnreadCount);
 
   useManagerNotificationsSocket(true);
 
   useEffect(() => {
     dispatch(fetchManagerUnreadCount());
+    dispatch(fetchManagerOrderUnreadCount());
     const intervalId = window.setInterval(() => {
       dispatch(fetchManagerUnreadCount());
+      dispatch(fetchManagerOrderUnreadCount());
     }, 15000);
     return () => window.clearInterval(intervalId);
   }, [dispatch]);
@@ -50,6 +54,9 @@ function ManagerHeader() {
         >
           <ShoppingBag size={16} />
           Заказы
+          {orderUnreadCount > 0 && (
+            <span className="manager-header-badge">{orderUnreadCount > 99 ? '99+' : orderUnreadCount}</span>
+          )}
         </Link>
         <Link
           to="/manager/products"

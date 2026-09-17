@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import { fetchManagerRooms, fetchManagerUnreadCount, getWsToken } from '../features/chat/chatSlice';
+import { fetchManagerOrderUnreadCount } from '../features/orders/ordersSlice';
 
 function useManagerNotificationsSocket(enabled) {
   const dispatch = useDispatch();
@@ -27,9 +28,13 @@ function useManagerNotificationsSocket(enabled) {
 
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.type !== 'chat_message') return;
-        dispatch(fetchManagerRooms());
-        dispatch(fetchManagerUnreadCount());
+        if (data.type === 'chat_message') {
+          dispatch(fetchManagerRooms());
+          dispatch(fetchManagerUnreadCount());
+        }
+        if (data.type === 'manager_order_created') {
+          dispatch(fetchManagerOrderUnreadCount());
+        }
       };
 
       socket.onclose = () => {
