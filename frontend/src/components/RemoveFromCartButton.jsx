@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { removeItem } from '../features/cart/cartSlice';
 
-function RemoveFromCartButton({ productId }) {
+function RemoveFromCartButton({ productId, selectedAttributes = {} }) {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
     setIsLoading(true);
-    await dispatch(removeItem(productId));
+    await dispatch(removeItem({ productId, selectedAttributes }));
     setIsLoading(false);
   };
 

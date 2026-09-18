@@ -20,7 +20,27 @@ class CartViewSet(viewsets.ViewSet):
 
     def _get_cart_with_items(self, request):
         cart = get_or_create_cart(request)
-        return Cart.objects.prefetch_related('items__product').get(pk=cart.pk)
+        return Cart.objects.prefetch_related('items__product__attributes').get(pk=cart.pk)
+
+    def _get_attribute_stock(self, product, selected_attributes):
+        if not selected_attributes:
+            return product.stock
+        attrs = product.attributes.filter(
+            name__in=selected_attributes.keys(),
+            value__in=selected_attributes.values(),
+            available=True
+        )
+        if attrs.exists():
+            return min(attr.stock for attr in attrs)
+        return 0
+
+    def _get_cart_item(self, cart, product_id, selected_attributes):
+        return get_object_or_404(
+            CartItem,
+            cart=cart,
+            product_id=product_id,
+            selected_attributes=selected_attributes,
+        )
 
     def list(self, request):
         cart = self._get_cart_with_items(request)
@@ -30,18 +50,24 @@ class CartViewSet(viewsets.ViewSet):
     def add_item(self, request):
         serializer = AddItemSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        product_id = serializer.validated_data['product_id']
+        product = serializer.validated_data['product']
         quantity = serializer.validated_data['quantity']
+        selected_attributes = serializer.validated_data.get('selected_attributes', {})
 
         cart = get_or_create_cart(request)
-        product = get_object_or_404(Product, id=product_id, available=True)
 
-        item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-        new_quantity = quantity if created else item.quantity + quantity
+        item, created = CartItem.objects.get_or_create(
+            cart=cart,
+            product=product,
+            selected_attributes=selected_attributes,
+            defaults={'quantity': 0}
+        )
+        new_quantity = item.quantity + quantity
 
-        if new_quantity > product.stock:
+        max_stock = self._get_attribute_stock(product, selected_attributes)
+        if new_quantity > max_stock:
             return Response(
-                {'detail': f'Доступно только {product.stock} шт.'},
+                {'detail': f'Доступно только {max_stock} шт.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -57,16 +83,18 @@ class CartViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         product_id = serializer.validated_data['product_id']
         quantity = serializer.validated_data['quantity']
+        selected_attributes = serializer.validated_data.get('selected_attributes', {})
 
         cart = get_or_create_cart(request)
-        item = get_object_or_404(CartItem, cart=cart, product_id=product_id)
+        item = self._get_cart_item(cart, product_id, selected_attributes)
 
         if quantity == 0:
             item.delete()
         else:
-            if quantity > item.product.stock:
+            max_stock = self._get_attribute_stock(item.product, item.selected_attributes)
+            if quantity > max_stock:
                 return Response(
-                    {'detail': f'Доступно только {item.product.stock} шт.'},
+                    {'detail': f'Доступно только {max_stock} шт.'},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             item.quantity = quantity
@@ -80,9 +108,11 @@ class CartViewSet(viewsets.ViewSet):
         serializer = RemoveItemSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         product_id = serializer.validated_data['product_id']
+        selected_attributes = serializer.validated_data.get('selected_attributes', {})
 
         cart = get_or_create_cart(request)
-        CartItem.objects.filter(cart=cart, product_id=product_id).delete()
+        item = self._get_cart_item(cart, product_id, selected_attributes)
+        item.delete()
 
         cart = self._get_cart_with_items(request)
         return Response(CartSerializer(cart, context={'request': request}).data)

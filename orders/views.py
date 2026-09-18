@@ -32,8 +32,15 @@ def restore_order_stock(order):
     for item in order.items.select_related('product'):
         if item.product:
             product = Product.objects.select_for_update().get(pk=item.product.pk)
-            product.stock += item.quantity
-            product.save(update_fields=['stock'])
+            if item.selected_attributes:
+                for name, value in item.selected_attributes.items():
+                    attr = product.attributes.filter(name=name, value=value).first()
+                    if attr:
+                        attr.stock += item.quantity
+                        attr.save(update_fields=['stock'])
+            else:
+                product.stock += item.quantity
+                product.save(update_fields=['stock'])
 
 
 class OrderViewSet(viewsets.ViewSet):
@@ -56,7 +63,7 @@ class OrderViewSet(viewsets.ViewSet):
 
     def create(self, request):
         cart = get_or_create_cart(request)
-        cart_items = cart.items.select_related('product').all()
+        cart_items = cart.items.select_related('product').prefetch_related('product__attributes').all()
 
         if not cart_items:
             return Response({'detail': 'Корзина пуста'}, status=status.HTTP_400_BAD_REQUEST)
@@ -69,16 +76,34 @@ class OrderViewSet(viewsets.ViewSet):
 
             for cart_item in cart_items:
                 product = Product.objects.select_for_update().get(pk=cart_item.product.pk)
+                selected_attrs = cart_item.selected_attributes or {}
 
-                if product.stock < cart_item.quantity:
-                    transaction.set_rollback(True)
-                    return Response(
-                        {'detail': f'Недостаточно "{product.name}" на складе'},
-                        status=status.HTTP_400_BAD_REQUEST,
-                    )
-
-                product.stock -= cart_item.quantity
-                product.save(update_fields=['stock'])
+                if selected_attrs:
+                    for name, value in selected_attrs.items():
+                        attr = product.attributes.filter(name=name, value=value).first()
+                        if not attr:
+                            transaction.set_rollback(True)
+                            return Response(
+                                {'detail': f'Атрибут "{name}: {value}" не найден для товара "{product.name}"'},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+                        if attr.stock < cart_item.quantity:
+                            transaction.set_rollback(True)
+                            return Response(
+                                {'detail': f'Недостаточно "{product.name}" ({name}: {value}) на складе'},
+                                status=status.HTTP_400_BAD_REQUEST,
+                            )
+                        attr.stock -= cart_item.quantity
+                        attr.save(update_fields=['stock'])
+                else:
+                    if product.stock < cart_item.quantity:
+                        transaction.set_rollback(True)
+                        return Response(
+                            {'detail': f'Недостаточно "{product.name}" на складе'},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    product.stock -= cart_item.quantity
+                    product.save(update_fields=['stock'])
 
                 OrderItem.objects.create(
                     order=order,
@@ -86,6 +111,7 @@ class OrderViewSet(viewsets.ViewSet):
                     product_name=product.name,
                     price=product.price,
                     quantity=cart_item.quantity,
+                    selected_attributes=selected_attrs,
                 )
 
             cart_items.delete()

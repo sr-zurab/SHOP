@@ -20,6 +20,7 @@ function ManagerProductsPage() {
   const [form, setForm] = useState({
     name: '', slug: '', description: '', price: '', stock: '', category: '', available: true,
   });
+  const [attributes, setAttributes] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -53,6 +54,7 @@ function ManagerProductsPage() {
 
   const resetForm = () => {
     setForm({ name: '', slug: '', description: '', price: '', stock: '', category: '', available: true });
+    setAttributes([]);
     setImageFile(null);
     setGalleryFiles([]);
     setEditingProduct(null);
@@ -69,6 +71,7 @@ function ManagerProductsPage() {
       category: product.category?.id || '',
       available: product.in_stock,
     });
+    setAttributes(product.attributes || []);
   };
 
   const buildFormData = () => {
@@ -84,6 +87,12 @@ function ManagerProductsPage() {
       formData.append('image', imageFile);
     }
     galleryFiles.forEach((file) => formData.append('gallery_images', file));
+    attributes.forEach((attr, index) => {
+      formData.append(`attributes[${index}][name]`, attr.name);
+      formData.append(`attributes[${index}][value]`, attr.value);
+      formData.append(`attributes[${index}][stock]`, attr.stock);
+      formData.append(`attributes[${index}][available]`, attr.available);
+    });
     return formData;
   };
 
@@ -221,6 +230,75 @@ function ManagerProductsPage() {
               onChange={(e) => setGalleryFiles(Array.from(e.target.files))}
             />
           </label>
+
+          <div className="manager-attributes-section">
+            <h3>Атрибуты (цвет, размер и т.д.)</h3>
+            {attributes.map((attr, index) => (
+              <div key={index} className="manager-attribute-row">
+                <input
+                  type="text"
+                  placeholder="Название (напр. Цвет)"
+                  value={attr.name}
+                  onChange={(e) => {
+                    const newAttrs = [...attributes];
+                    newAttrs[index] = { ...newAttrs[index], name: e.target.value };
+                    setAttributes(newAttrs);
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Значение (напр. Красный)"
+                  value={attr.value}
+                  onChange={(e) => {
+                    const newAttrs = [...attributes];
+                    newAttrs[index] = { ...newAttrs[index], value: e.target.value };
+                    setAttributes(newAttrs);
+                  }}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Остаток"
+                  value={attr.stock}
+                  onChange={(e) => {
+                    const newAttrs = [...attributes];
+                    newAttrs[index] = { ...newAttrs[index], stock: parseInt(e.target.value) || 0 };
+                    setAttributes(newAttrs);
+                  }}
+                />
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={attr.available}
+                    onChange={(e) => {
+                      const newAttrs = [...attributes];
+                      newAttrs[index] = { ...newAttrs[index], available: e.target.checked };
+                      setAttributes(newAttrs);
+                    }}
+                  />
+                  В наличии
+                </label>
+                <button
+                  type="button"
+                  className="btn btn-remove"
+                  onClick={() => setAttributes(attributes.filter((_, i) => i !== index))}
+                  aria-label="Удалить атрибут"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+            {attributes.length === 0 && (
+              <p className="empty-text" style={{ margin: '8px 0', color: '#999' }}>Атрибутов нет</p>
+            )}
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => setAttributes([...attributes, { name: '', value: '', stock: 0, available: true }])}
+            >
+              <Plus size={16} /> Добавить атрибут
+            </button>
+          </div>
 
           <div className="form-actions">
             <button type="submit" className="btn btn-primary">

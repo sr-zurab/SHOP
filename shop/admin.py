@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Category, Product, ProductImage
+from .models import Category, Product, ProductImage, ProductAttribute
 
 
 class ProductImageInline(admin.TabularInline):
@@ -16,6 +16,13 @@ class ProductImageInline(admin.TabularInline):
     thumbnail_preview.short_description = 'Превью'
 
 
+class ProductAttributeInline(admin.TabularInline):
+    model = ProductAttribute
+    extra = 1
+    fields = ['name', 'value', 'stock', 'available', 'created', 'updated']
+    readonly_fields = ['created', 'updated']
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['name', 'slug']
@@ -27,10 +34,10 @@ class CategoryAdmin(admin.ModelAdmin):
 class ProductAdmin(admin.ModelAdmin):
     list_display = ['name', 'category', 'price', 'stock', 'available', 'thumbnail_preview', 'created']
     list_filter = ['available', 'category', 'created']
-    list_editable = ['price', 'stock', 'available']  # быстрое редактирование прямо из списка
+    list_editable = ['price', 'stock', 'available']
     search_fields = ['name', 'description']
     prepopulated_fields = {'slug': ('name',)}
-    inlines = [ProductImageInline]
+    inlines = [ProductImageInline, ProductAttributeInline]
     readonly_fields = ['created', 'updated', 'thumbnail_preview']
     list_per_page = 50
 

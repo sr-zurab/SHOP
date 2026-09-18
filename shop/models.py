@@ -86,3 +86,27 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return f'{self.product.name}, изображение {self.order}'
+
+
+class ProductAttribute(models.Model):
+    product = models.ForeignKey(
+        Product, related_name='attributes',
+        on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=100)
+    value = models.CharField(max_length=100)
+    stock = models.PositiveIntegerField(default=0)
+    available = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('product', 'name', 'value')
+        indexes = [models.Index(fields=['available'])]
+
+    def __str__(self):
+        return f'{self.product.name} — {self.name}: {self.value}'
+
+    @property
+    def in_stock(self):
+        return self.available and self.stock > 0

@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { updateQuantity } from '../features/cart/cartSlice';
+import { updateQuantity, removeItem } from '../features/cart/cartSlice';
 import QuantitySelector from './QuantitySelector';
 
-function CartQuantityControl({ productId, quantity, maxStock }) {
+function CartQuantityControl({ productId, quantity, maxStock, selectedAttributes = {} }) {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
 
   const changeQuantity = async (newQuantity) => {
-    if (newQuantity < 1 || newQuantity > maxStock) return;
+    if (newQuantity < 1) {
+      await dispatch(removeItem({ productId, selectedAttributes }));
+      return;
+    }
+    if (newQuantity > maxStock) return;
     setIsLoading(true);
-    await dispatch(updateQuantity({ productId, quantity: newQuantity }));
+    await dispatch(updateQuantity({ productId, quantity: newQuantity, selectedAttributes }));
     setIsLoading(false);
   };
 

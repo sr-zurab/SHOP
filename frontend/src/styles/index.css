@@ -4,6 +4,7 @@
 @import './categories.css';
 @import './product-card.css';
 @import './quantity-selector.css';
+@import './attribute-selector.css';
 @import './home-page.css';
 @import './product-detail.css';
 @import './cart-page.css';
@@ -15,4 +16,5 @@
 @import './chat-widget.css';
 @import './manager-chat.css';
 @import './manager-login.css';
+@import './manager-attributes.css';
 @import './search-bar.css';

@@ -3,9 +3,11 @@ from .models import Order, OrderItem, OrderComment
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    selected_attributes = serializers.JSONField(read_only=True)
+
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'product_name', 'price', 'quantity']
+        fields = ['id', 'product', 'product_name', 'price', 'quantity', 'selected_attributes']
 
 
 class OrderCommentSerializer(serializers.ModelSerializer):

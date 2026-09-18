@@ -1,8 +1,33 @@
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import AddToCartButton from './AddToCartButton';
 import WishlistButton from './WishlistButton';
 
 function ProductCard({ product }) {
+  const { data: cart } = useSelector((state) => state.cart);
+
+  // Для товаров БЕЗ атрибутов — ищем конкретный cart item с пустыми атрибутами
+  const findCartItemWithoutAttrs = (productId) => {
+    if (!cart?.items) return null;
+    return cart.items.find((item) =>
+      item.product.id === productId &&
+      (!item.selected_attributes || Object.keys(item.selected_attributes).length === 0)
+    );
+  };
+
+  // Для товаров С атрибутами — суммируем количество по всем вариантам
+  const getTotalQuantityInCart = (productId) => {
+    if (!cart?.items) return 0;
+    return cart.items
+      .filter((item) => item.product.id === productId)
+      .reduce((sum, item) => sum + item.quantity, 0);
+  };
+
+  const hasAttributes = product.has_attributes;
+  const cartItem = findCartItemWithoutAttrs(product.id);
+  const totalInCart = getTotalQuantityInCart(product.id);
+  const isInCart = hasAttributes ? totalInCart > 0 : !!cartItem;
+
   return (
     <div className={`product-card ${!product.in_stock ? 'out-of-stock' : ''}`}>
       <div className="product-card-image-wrap">
@@ -26,7 +51,15 @@ function ProductCard({ product }) {
         <p className="product-card-price">{product.price} ₽</p>
       </Link>
 
-      <AddToCartButton productId={product.id} disabled={!product.in_stock} />
+      <AddToCartButton
+        productId={product.id}
+        product={product}
+        selectedAttributes={cartItem?.selected_attributes || {}}
+        isInCart={isInCart}
+        isFullySelected={!hasAttributes}
+        disabled={!product.in_stock}
+        totalInCart={hasAttributes ? totalInCart : (cartItem?.quantity || 0)}
+      />
     </div>
   );
 }

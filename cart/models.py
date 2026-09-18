@@ -28,9 +28,10 @@ class CartItem (models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete = models.CASCADE)
     product = models.ForeignKey('shop.Product', on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
+    selected_attributes = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        unique_together = ('cart', 'product')
+        unique_together = ('cart', 'product', 'selected_attributes')
 
     def get_total_price(self):
-        return self.product.price*self.quantity
+        return self.product.price * self.quantity

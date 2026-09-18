@@ -49,6 +49,7 @@ class OrderItem(models.Model):
     product_name = models.CharField(max_length=200)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.PositiveIntegerField(default=1)
+    selected_attributes = models.JSONField(default=dict, blank=True)
 
     def get_total_price(self):
         return self.price * self.quantity

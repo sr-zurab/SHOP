@@ -4,7 +4,7 @@ function QuantitySelector({ quantity, onIncrease, onDecrease, disabled }) {
       <button
         className="qty-btn"
         onClick={onDecrease}
-        disabled={disabled || quantity <= 1}
+        disabled={disabled || quantity <= 0}
         aria-label="Уменьшить количество"
       >
         −

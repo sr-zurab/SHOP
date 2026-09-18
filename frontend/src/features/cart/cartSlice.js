@@ -15,12 +15,12 @@ export const fetchCart = createAsyncThunk(
 
 export const addItem = createAsyncThunk(
   'cart/addItem',
-  async ({ productId, quantity = 1 }, { rejectWithValue }) => {
+  async ({ productId, quantity = 1, selectedAttributes = {} }, { rejectWithValue }) => {
     try {
       const res = await authFetch('/cart/add_item/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: productId, quantity }),
+        body: JSON.stringify({ product_id: productId, quantity, selected_attributes: selectedAttributes }),
       });
       return await parseJsonOrThrow(res, 'Ошибка добавления товара');
     } catch (error) {
@@ -31,12 +31,12 @@ export const addItem = createAsyncThunk(
 
 export const updateQuantity = createAsyncThunk(
   'cart/updateQuantity',
-  async ({ productId, quantity }, { rejectWithValue }) => {
+  async ({ productId, quantity, selectedAttributes = {} }, { rejectWithValue }) => {
     try {
       const res = await authFetch('/cart/update_item/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: productId, quantity }),
+        body: JSON.stringify({ product_id: productId, quantity, selected_attributes: selectedAttributes }),
       });
       return await parseJsonOrThrow(res, 'Ошибка обновления количества');
     } catch (error) {
@@ -47,12 +47,12 @@ export const updateQuantity = createAsyncThunk(
 
 export const removeItem = createAsyncThunk(
   'cart/removeItem',
-  async (productId, { rejectWithValue }) => {
+  async ({ productId, selectedAttributes = {} }, { rejectWithValue }) => {
     try {
       const res = await authFetch('/cart/remove_item/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: productId }),
+        body: JSON.stringify({ product_id: productId, selected_attributes: selectedAttributes }),
       });
       return await parseJsonOrThrow(res, 'Ошибка удаления товара');
     } catch (error) {

@@ -27,39 +27,53 @@ function CartPage() {
     );
   }
 
+  const formatAttributes = (attrs) => {
+    if (!attrs || Object.keys(attrs).length === 0) return null;
+    return Object.entries(attrs).map(([name, value]) => `${name}: ${value}`).join(', ');
+  };
+
   return (
     <div className="cart-page">
       <h1>Корзина</h1>
 
       <div className="cart-items">
-        {cart.items.map((item) => (
-          <div key={item.id} className="cart-item">
-            <Link to={`/products/${item.product.slug}`} className="cart-item-image">
-              {item.product.thumbnail ? (
-                <img src={item.product.thumbnail} alt={item.product.name} />
-              ) : (
-                <div className="product-card-no-image">Нет фото</div>
-              )}
-            </Link>
+        {cart.items.map((item) => {
+          const attrString = formatAttributes(item.selected_attributes);
+          const maxStock = item.attribute_stock !== undefined ? item.attribute_stock : item.product.stock;
 
-            <div className="cart-item-info">
-              <Link to={`/products/${item.product.slug}`} className="cart-item-name">
-                {item.product.name}
+          return (
+            <div key={item.id} className="cart-item">
+              <Link to={`/products/${item.product.slug}`} className="cart-item-image">
+                {item.product.thumbnail ? (
+                  <img src={item.product.thumbnail} alt={item.product.name} />
+                ) : (
+                  <div className="product-card-no-image">Нет фото</div>
+                )}
               </Link>
-              <p className="cart-item-price">{item.product.price} ₽</p>
+
+              <div className="cart-item-info">
+                <Link to={`/products/${item.product.slug}`} className="cart-item-name">
+                  {item.product.name}
+                </Link>
+                <p className="cart-item-price">{item.product.price} ₽</p>
+                {attrString && (
+                  <p className="cart-item-attributes">{attrString}</p>
+                )}
+              </div>
+
+              <CartQuantityControl
+                productId={item.product.id}
+                quantity={item.quantity}
+                maxStock={maxStock}
+                selectedAttributes={item.selected_attributes || {}}
+              />
+
+              <p className="cart-item-total">{item.total_price} ₽</p>
+
+              <RemoveFromCartButton productId={item.product.id} selectedAttributes={item.selected_attributes || {}} />
             </div>
-
-            <CartQuantityControl
-              productId={item.product.id}
-              quantity={item.quantity}
-              maxStock={item.product.stock}
-            />
-
-            <p className="cart-item-total">{item.total_price} ₽</p>
-
-            <RemoveFromCartButton productId={item.product.id} />
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="cart-summary">

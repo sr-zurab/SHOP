@@ -51,6 +51,11 @@ function OrderDetailPage() {
 
   const canCancel = order.status === 'pending' || order.status === 'paid';
 
+  const formatAttributes = (attrs) => {
+    if (!attrs || Object.keys(attrs).length === 0) return null;
+    return Object.entries(attrs).map(([name, value]) => `${name}: ${value}`).join(', ');
+  };
+
   return (
     <div className="order-detail-page">
       <Link to="/orders" className="back-link">← К списку заказов</Link>
@@ -73,12 +78,18 @@ function OrderDetailPage() {
 
       <div className="order-detail-section">
         <h2>Состав заказа</h2>
-        {order.items.map((item) => (
-          <div key={item.id} className="checkout-summary-item">
-            <span>{item.product_name} × {item.quantity}</span>
-            <span>{item.price * item.quantity} ₽</span>
-          </div>
-        ))}
+        {order.items.map((item) => {
+          const attrString = formatAttributes(item.selected_attributes);
+          return (
+            <div key={item.id} className="checkout-summary-item">
+              <div>
+                <span>{item.product_name} × {item.quantity}</span>
+                {attrString && <p className="order-item-attributes">{attrString}</p>}
+              </div>
+              <span>{item.price * item.quantity} ₽</span>
+            </div>
+          );
+        })}
         <div className="checkout-summary-total">
           <span>Итого:</span>
           <strong>{order.total_price} ₽</strong>
