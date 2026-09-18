@@ -1,6 +1,8 @@
 from django.db import models
 from rest_framework import serializers
+
 from .models import Product, Category, ProductImage, ProductAttribute
+
 import json
 
 
@@ -20,11 +22,21 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
     def get_image(self, obj):
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.image_detail.url) if request else obj.image_detail.url
+
+        return (
+            request.build_absolute_uri(obj.image_detail.url)
+            if request
+            else obj.image_detail.url
+        )
 
     def get_thumbnail(self, obj):
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.thumbnail.url) if request else obj.thumbnail.url
+
+        return (
+            request.build_absolute_uri(obj.thumbnail.url)
+            if request
+            else obj.thumbnail.url
+        )
 
 
 class ProductAttributeSerializer(serializers.ModelSerializer):
@@ -32,7 +44,14 @@ class ProductAttributeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductAttribute
-        fields = ['id', 'name', 'value', 'stock', 'available', 'in_stock']
+        fields = [
+            'id',
+            'name',
+            'value',
+            'stock',
+            'available',
+            'in_stock',
+        ]
 
     def get_in_stock(self, obj):
         return obj.in_stock
@@ -40,27 +59,71 @@ class ProductAttributeSerializer(serializers.ModelSerializer):
 
 class ProductListSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
-    category = serializers.SlugRelatedField(slug_field='slug', read_only=True)
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        read_only=True
+    )
     in_stock = serializers.SerializerMethodField()
     has_attributes = serializers.SerializerMethodField()
+    grouped_attributes = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'slug', 'price', 'thumbnail', 'category', 'in_stock', 'stock', 'has_attributes']
+        fields = [
+            'id',
+            'name',
+            'slug',
+            'price',
+            'thumbnail',
+            'category',
+            'in_stock',
+            'stock',
+            'has_attributes',
+            'grouped_attributes',
+        ]
 
     def get_thumbnail(self, obj):
         request = self.context.get('request')
+
         if not obj.image:
             return None
-        return request.build_absolute_uri(obj.thumbnail.url) if request else obj.thumbnail.url
+
+        return (
+            request.build_absolute_uri(obj.thumbnail.url)
+            if request
+            else obj.thumbnail.url
+        )
 
     def get_in_stock(self, obj):
+        # Для товара с атрибутами наличие определяется
+        # по вариантам атрибутов.
         if obj.attributes.exists():
-            return obj.attributes.filter(available=True, stock__gt=0).exists()
+            return obj.attributes.filter(
+                available=True,
+                stock__gt=0
+            ).exists()
+
+        # Для товара без атрибутов — по stock самого товара.
         return obj.stock > 0
 
     def get_has_attributes(self, obj):
         return obj.attributes.exists()
+
+    def get_grouped_attributes(self, obj):
+        attrs = obj.attributes.filter(available=True)
+
+        grouped = {}
+
+        for attr in attrs:
+            grouped.setdefault(attr.name, []).append({
+                'id': attr.id,
+                'value': attr.value,
+                'stock': attr.stock,
+                'available': attr.available,
+                'in_stock': attr.in_stock,
+            })
+
+        return grouped
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -71,36 +134,70 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     in_stock = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
-    attributes = ProductAttributeSerializer(many=True, read_only=True)
+    attributes = ProductAttributeSerializer(
+        many=True,
+        read_only=True
+    )
     grouped_attributes = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'description', 'price',
-            'images', 'main_image', 'category', 'in_stock', 'stock', 'thumbnail',
-            'average_rating', 'reviews_count', 'attributes', 'grouped_attributes',
+            'id',
+            'name',
+            'slug',
+            'description',
+            'price',
+            'images',
+            'main_image',
+            'category',
+            'in_stock',
+            'stock',
+            'thumbnail',
+            'average_rating',
+            'reviews_count',
+            'attributes',
+            'grouped_attributes',
         ]
 
     def get_main_image(self, obj):
         request = self.context.get('request')
+
         if not obj.image:
             return None
-        return request.build_absolute_uri(obj.image_detail.url) if request else obj.image_detail.url
+
+        return (
+            request.build_absolute_uri(obj.image_detail.url)
+            if request
+            else obj.image_detail.url
+        )
 
     def get_thumbnail(self, obj):
         request = self.context.get('request')
+
         if not obj.image:
             return None
-        return request.build_absolute_uri(obj.thumbnail.url) if request else obj.thumbnail.url
+
+        return (
+            request.build_absolute_uri(obj.thumbnail.url)
+            if request
+            else obj.thumbnail.url
+        )
 
     def get_in_stock(self, obj):
         if obj.attributes.exists():
-            return obj.attributes.filter(available=True, stock__gt=0).exists()
+            return obj.attributes.filter(
+                available=True,
+                stock__gt=0
+            ).exists()
+
         return obj.stock > 0
 
     def get_average_rating(self, obj):
-        avg = obj.reviews.aggregate(models.Avg('rating'))['rating__avg']
+        avg = obj.reviews.aggregate(
+            models.Avg('rating')
+        )['rating__avg']
+
         return round(avg, 1) if avg else None
 
     def get_reviews_count(self, obj):
@@ -108,7 +205,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_grouped_attributes(self, obj):
         attrs = obj.attributes.filter(available=True)
+
         grouped = {}
+
         for attr in attrs:
             grouped.setdefault(attr.name, []).append({
                 'id': attr.id,
@@ -117,24 +216,49 @@ class ProductDetailSerializer(serializers.ModelSerializer):
                 'available': attr.available,
                 'in_stock': attr.in_stock,
             })
+
         return grouped
 
 
 class ProductAttributeWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductAttribute
-        fields = ['id', 'name', 'value', 'stock', 'available']
+        fields = [
+            'id',
+            'name',
+            'value',
+            'stock',
+            'available',
+        ]
 
 
 class ProductWriteSerializer(serializers.ModelSerializer):
-    attributes = ProductAttributeWriteSerializer(many=True, required=False)
+    attributes = ProductAttributeWriteSerializer(
+        many=True,
+        required=False
+    )
 
     class Meta:
         model = Product
-        fields = ['id', 'category', 'name', 'slug', 'description', 'price', 'available', 'stock', 'image', 'attributes']
+        fields = [
+            'id',
+            'category',
+            'name',
+            'slug',
+            'description',
+            'price',
+            'available',
+            'stock',
+            'image',
+            'attributes',
+        ]
 
     def to_internal_value(self, data):
-        attrs_raw = data.get('attributes') if hasattr(data, 'get') else None
+        attrs_raw = (
+            data.get('attributes')
+            if hasattr(data, 'get')
+            else None
+        )
 
         if isinstance(attrs_raw, str):
             try:
@@ -142,8 +266,6 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             except (TypeError, ValueError):
                 parsed_attrs = []
 
-            # QueryDict из multipart/form-data неизменяем и не умеет хранить список
-            # словарей как значение — конвертируем в обычный dict перед подменой поля
             data = data.dict() if hasattr(data, 'dict') else dict(data)
             data['attributes'] = parsed_attrs
 
@@ -151,21 +273,36 @@ class ProductWriteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         attributes_data = validated_data.pop('attributes', [])
+
         product = Product.objects.create(**validated_data)
+
         for attr_data in attributes_data:
-            ProductAttribute.objects.create(product=product, **attr_data)
+            ProductAttribute.objects.create(
+                product=product,
+                **attr_data
+            )
+
         return product
 
     def update(self, instance, validated_data):
-        attributes_data = validated_data.pop('attributes', None)
+        attributes_data = validated_data.pop(
+            'attributes',
+            None
+        )
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
         instance.save()
 
         if attributes_data is not None:
             instance.attributes.all().delete()
+
             for attr_data in attributes_data:
-                ProductAttribute.objects.create(product=instance, **attr_data)
+                ProductAttribute.objects.create(
+                    product=instance,
+                    **attr_data
+                )
 
         return instance
 
@@ -174,22 +311,44 @@ class ManagerProductSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
     category = CategorySerializer(read_only=True)
     in_stock = serializers.SerializerMethodField()
-    attributes = ProductAttributeSerializer(many=True, read_only=True)
+    attributes = ProductAttributeSerializer(
+        many=True,
+        read_only=True
+    )
 
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'slug', 'description', 'price', 'stock',
-            'available', 'thumbnail', 'category', 'in_stock', 'attributes',
+            'id',
+            'name',
+            'slug',
+            'description',
+            'price',
+            'stock',
+            'available',
+            'thumbnail',
+            'category',
+            'in_stock',
+            'attributes',
         ]
 
     def get_thumbnail(self, obj):
         request = self.context.get('request')
+
         if not obj.image:
             return None
-        return request.build_absolute_uri(obj.thumbnail.url) if request else obj.thumbnail.url
+
+        return (
+            request.build_absolute_uri(obj.thumbnail.url)
+            if request
+            else obj.thumbnail.url
+        )
 
     def get_in_stock(self, obj):
         if obj.attributes.exists():
-            return obj.attributes.filter(available=True, stock__gt=0).exists()
+            return obj.attributes.filter(
+                available=True,
+                stock__gt=0
+            ).exists()
+
         return obj.stock > 0

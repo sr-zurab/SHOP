@@ -113,6 +113,60 @@ const productsSlice = createSlice({
     clearCurrentProduct: (state) => {
       state.current = null;
     },
+
+    stockUpdated: (state, action) => {
+      const {
+        product_id,
+        stock,
+        in_stock,
+        available,
+        has_attributes,
+        attributes = [],
+      } = action.payload;
+
+      const groupedAttributes = {};
+
+      attributes.forEach((attribute) => {
+        if (!groupedAttributes[attribute.name]) {
+          groupedAttributes[attribute.name] = [];
+        }
+
+        groupedAttributes[attribute.name].push({
+          id: attribute.id,
+          value: attribute.value,
+          stock: attribute.stock,
+          available: attribute.available,
+          in_stock: attribute.in_stock,
+        });
+      });
+
+      const updateProduct = (product) => {
+        if (!product || product.id !== product_id) {
+          return;
+        }
+
+        product.stock = stock;
+        product.in_stock = in_stock;
+        product.available = available;
+        product.has_attributes = has_attributes;
+
+        if (Array.isArray(product.attributes)) {
+          product.attributes = attributes.map((attribute) => ({
+            id: attribute.id,
+            name: attribute.name,
+            value: attribute.value,
+            stock: attribute.stock,
+            available: attribute.available,
+            in_stock: attribute.in_stock,
+          }));
+        }
+
+        product.grouped_attributes = groupedAttributes;
+      };
+
+      state.list.forEach(updateProduct);
+      updateProduct(state.current);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -160,14 +214,25 @@ const productsSlice = createSlice({
         state.managerList.unshift(action.payload);
       })
       .addCase(updateProduct.fulfilled, (state, action) => {
-        const index = state.managerList.findIndex((p) => p.slug === action.payload.slug);
-        if (index >= 0) state.managerList[index] = action.payload;
+        const index = state.managerList.findIndex(
+          (p) => p.slug === action.payload.slug
+        );
+
+        if (index >= 0) {
+          state.managerList[index] = action.payload;
+        }
       })
       .addCase(deleteProduct.fulfilled, (state, action) => {
-        state.managerList = state.managerList.filter((p) => p.slug !== action.payload);
+        state.managerList = state.managerList.filter(
+          (p) => p.slug !== action.payload
+        );
       });
   },
 });
 
-export const { clearCurrentProduct } = productsSlice.actions;
+export const {
+  clearCurrentProduct,
+  stockUpdated,
+} = productsSlice.actions;
+
 export default productsSlice.reducer;
