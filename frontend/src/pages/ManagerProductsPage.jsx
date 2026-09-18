@@ -87,14 +87,9 @@ function ManagerProductsPage() {
       formData.append('image', imageFile);
     }
     galleryFiles.forEach((file) => formData.append('gallery_images', file));
-    attributes.forEach((attr, index) => {
-      formData.append(`attributes[${index}][name]`, attr.name);
-      formData.append(`attributes[${index}][value]`, attr.value);
-      formData.append(`attributes[${index}][stock]`, attr.stock);
-      formData.append(`attributes[${index}][available]`, attr.available);
-    });
+    formData.append('attributes', JSON.stringify(attributes)); // ← было bracket-нотацией, теперь один JSON
     return formData;
-  };
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();

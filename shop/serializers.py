@@ -1,6 +1,7 @@
 from django.db import models
 from rest_framework import serializers
 from .models import Product, Category, ProductImage, ProductAttribute
+import json
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -131,6 +132,22 @@ class ProductWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['id', 'category', 'name', 'slug', 'description', 'price', 'available', 'stock', 'image', 'attributes']
+
+    def to_internal_value(self, data):
+        attrs_raw = data.get('attributes') if hasattr(data, 'get') else None
+
+        if isinstance(attrs_raw, str):
+            try:
+                parsed_attrs = json.loads(attrs_raw)
+            except (TypeError, ValueError):
+                parsed_attrs = []
+
+            # QueryDict из multipart/form-data неизменяем и не умеет хранить список
+            # словарей как значение — конвертируем в обычный dict перед подменой поля
+            data = data.dict() if hasattr(data, 'dict') else dict(data)
+            data['attributes'] = parsed_attrs
+
+        return super().to_internal_value(data)
 
     def create(self, validated_data):
         attributes_data = validated_data.pop('attributes', [])
