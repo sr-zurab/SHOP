@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'reviews',
     'chat',
     'channels',
+    'discounts',
 ]
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
