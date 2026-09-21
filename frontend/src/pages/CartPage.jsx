@@ -23,21 +23,21 @@ function CartPage() {
       return;
     }
 
+    const availableIds = cart.items
+      .filter((item) => {
+        const maxStock =
+          item.attribute_stock !== undefined
+            ? item.attribute_stock
+            : item.product.stock;
+
+        return (
+          item.product.available !== false &&
+          maxStock > 0
+        );
+      })
+      .map((item) => item.id);
+
     setSelectedItemIds((currentIds) => {
-      const availableIds = cart.items
-        .filter((item) => {
-          const maxStock =
-            item.attribute_stock !== undefined
-              ? item.attribute_stock
-              : item.product.stock;
-
-          return (
-            item.product.available !== false &&
-            maxStock > 0
-          );
-        })
-        .map((item) => item.id);
-
       if (currentIds.length === 0) {
         return availableIds;
       }
@@ -92,7 +92,11 @@ function CartPage() {
     );
   }
 
-  const availableItems = cart.items.filter(
+  const sortedCartItems = [...cart.items].sort(
+    (a, b) => a.id - b.id
+  );
+
+  const availableItems = sortedCartItems.filter(
     (item) => !isItemOutOfStock(item)
   );
 
@@ -102,7 +106,7 @@ function CartPage() {
       selectedItemIds.includes(item.id)
     );
 
-  const selectedItems = cart.items.filter((item) =>
+  const selectedItems = sortedCartItems.filter((item) =>
     selectedItemIds.includes(item.id)
   );
 
@@ -172,7 +176,7 @@ function CartPage() {
       )}
 
       <div className="cart-items">
-        {cart.items.map((item) => {
+        {sortedCartItems.map((item) => {
           const attrString = formatAttributes(
             item.selected_attributes
           );

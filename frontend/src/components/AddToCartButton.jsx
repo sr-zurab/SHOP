@@ -9,7 +9,6 @@ import {
 
 import QuantitySelector from './QuantitySelector';
 
-
 function AddToCartButton({
   productId,
   product,
@@ -23,32 +22,35 @@ function AddToCartButton({
 }) {
   const dispatch = useDispatch();
 
-  const { data: cart } = useSelector((state) => state.cart);
+  const { data: cart } = useSelector(
+    (state) => state.cart
+  );
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [selected, setSelected] = useState({});
+  const [loadingItemId, setLoadingItemId] =
+    useState(null);
 
-  const hasAttributes = product?.has_attributes;
+  const [isAdding, setIsAdding] =
+    useState(false);
+
+  const [showModal, setShowModal] =
+    useState(false);
+
+  const [selected, setSelected] =
+    useState({});
+
+  const hasAttributes =
+    product?.has_attributes;
 
   const attributeNames = Object.keys(
     attributeGroups || {}
   );
 
-
-  /*
-   * Все позиции этого товара в корзине.
-   */
   const cartItemsForProduct = (
     cart?.items || []
   ).filter(
     (item) => item.product?.id === productId
   );
 
-
-  /*
-   * Только варианты с выбранными атрибутами.
-   */
   const attributeCartItems =
     cartItemsForProduct.filter(
       (item) =>
@@ -58,36 +60,17 @@ function AddToCartButton({
         ).length > 0
     );
 
-
-  /*
-   * Добавление нового товара.
-   */
   const handleAdd = async () => {
-    /*
-     * disabled означает только запрет
-     * добавления НОВОЙ позиции.
-     *
-     * Уже находящаяся в корзине позиция
-     * управляется отдельно.
-     */
     if (disabled) {
       return;
     }
 
-    /*
-     * Товар с атрибутами —
-     * открываем выбор варианта.
-     */
     if (hasAttributes) {
       setSelected({});
       setShowModal(true);
       return;
     }
 
-
-    /*
-     * Товар без атрибутов.
-     */
     if (!isFullySelected) {
       if (onAddToCart) {
         onAddToCart();
@@ -96,8 +79,7 @@ function AddToCartButton({
       return;
     }
 
-
-    setIsLoading(true);
+    setIsAdding(true);
 
     try {
       await dispatch(
@@ -108,14 +90,10 @@ function AddToCartButton({
         })
       ).unwrap();
     } finally {
-      setIsLoading(false);
+      setIsAdding(false);
     }
   };
 
-
-  /*
-   * Выбор значения атрибута.
-   */
   const handleSelectAttribute = (
     name,
     value
@@ -126,11 +104,6 @@ function AddToCartButton({
     }));
   };
 
-
-  /*
-   * Проверяем, выбраны ли все группы
-   * атрибутов.
-   */
   const isSelectionComplete =
     attributeNames.length > 0 &&
     attributeNames.every(
@@ -138,10 +111,6 @@ function AddToCartButton({
         selected[name] !== undefined
     );
 
-
-  /*
-   * Добавление выбранного варианта.
-   */
   const handleConfirmAdd = async () => {
     if (
       !isSelectionComplete ||
@@ -150,7 +119,7 @@ function AddToCartButton({
       return;
     }
 
-    setIsLoading(true);
+    setIsAdding(true);
 
     try {
       await dispatch(
@@ -164,119 +133,99 @@ function AddToCartButton({
       setShowModal(false);
       setSelected({});
     } finally {
-      setIsLoading(false);
+      setIsAdding(false);
     }
   };
 
-
-  /*
-   * Изменение количества конкретной
-   * позиции корзины.
-   */
   const handleQuantityChange = async (
     item,
     newQuantity
   ) => {
-    /*
-     * При уменьшении ниже 1 —
-     * удаляем позицию.
-     */
+    if (!item?.id) {
+      return;
+    }
+
     if (newQuantity < 1) {
-      await dispatch(
-        removeItem({
-          productId,
-          selectedAttributes:
-            item.selected_attributes || {},
-        })
-      );
+      setLoadingItemId(item.id);
+
+      try {
+        await dispatch(
+          removeItem({
+            productId: item.product.id,
+            selectedAttributes:
+              item.selected_attributes || {},
+          })
+        ).unwrap();
+      } finally {
+        setLoadingItemId(null);
+      }
 
       return;
     }
 
-
-    setIsLoading(true);
+    setLoadingItemId(item.id);
 
     try {
       await dispatch(
         updateQuantity({
-          productId,
+          productId: item.product.id,
           quantity: newQuantity,
           selectedAttributes:
             item.selected_attributes || {},
         })
       ).unwrap();
     } finally {
-      setIsLoading(false);
+      setLoadingItemId(null);
     }
   };
-
-
-  /*
-   * =========================================================
-   * ТОВАР БЕЗ АТРИБУТОВ
-   * =========================================================
-   */
 
   if (
     isInCart &&
     !hasAttributes
   ) {
+    const cartItem =
+      typeof isInCart === 'object' &&
+      isInCart !== null
+        ? isInCart
+        : cartItemsForProduct[0];
+
+    if (!cartItem) {
+      return null;
+    }
+
     const quantity =
-      typeof isInCart === 'object' &&
-      isInCart !== null
-        ? isInCart.quantity
-        : (totalInCart || 1);
+      cartItem.quantity;
 
-
-    /*
-     * Для товара без атрибутов
-     * остаток берём из product.stock.
-     */
     const maxStock =
-      typeof isInCart === 'object' &&
-      isInCart !== null
-        ? (
-            isInCart.attribute_stock ??
-            product?.stock ??
-            999
-          )
-        : (
-            product?.stock ??
-            999
-          );
+      cartItem.attribute_stock ??
+      product?.stock ??
+      0;
 
+    const itemLoading =
+      loadingItemId === cartItem.id;
 
     return (
       <QuantitySelector
         quantity={quantity}
         onIncrease={() =>
           handleQuantityChange(
-            isInCart,
+            cartItem,
             quantity + 1
           )
         }
         onDecrease={() =>
           handleQuantityChange(
-            isInCart,
+            cartItem,
             quantity - 1
           )
         }
-        disabled={isLoading}
+        disabled={itemLoading}
         increaseDisabled={
           quantity >= maxStock
         }
       />
     );
   }
-
-
-  /*
-   * =========================================================
-   * ТОВАР С АТРИБУТАМИ
-   *
-   * ОДИН ВАРИАНТ В КОРЗИНЕ
-   * =========================================================
-   */
 
   if (
     hasAttributes &&
@@ -288,14 +237,11 @@ function AddToCartButton({
     const quantity =
       cartItem.quantity;
 
-    /*
-     * Для атрибутного товара
-     * используем ТОЛЬКО остаток
-     * конкретного варианта.
-     */
     const maxStock =
       cartItem.attribute_stock ?? 0;
 
+    const itemLoading =
+      loadingItemId === cartItem.id;
 
     return (
       <QuantitySelector
@@ -312,20 +258,13 @@ function AddToCartButton({
             quantity - 1
           )
         }
-        disabled={isLoading}
+        disabled={itemLoading}
         increaseDisabled={
           quantity >= maxStock
         }
       />
     );
   }
-
-
-  /*
-   * =========================================================
-   * ОБЩЕЕ КОЛИЧЕСТВО ВАРИАНТОВ
-   * =========================================================
-   */
 
   const totalQuantity =
     attributeCartItems.reduce(
@@ -334,17 +273,9 @@ function AddToCartButton({
       0
     );
 
-
   const hasVariantsInCart =
     hasAttributes &&
     attributeCartItems.length > 0;
-
-
-  /*
-   * =========================================================
-   * НЕСКОЛЬКО ВАРИАНТОВ В КОРЗИНЕ
-   * =========================================================
-   */
 
   if (
     hasAttributes &&
@@ -357,17 +288,16 @@ function AddToCartButton({
           onClick={() =>
             setShowModal(true)
           }
-          disabled={isLoading}
+          disabled={isAdding}
         >
           В корзине: {totalQuantity} шт.
         </button>
-
 
         {showModal && (
           <div
             className="attribute-modal-overlay"
             onClick={() => {
-              if (!isLoading) {
+              if (!isAdding && !loadingItemId) {
                 setShowModal(false);
               }
             }}
@@ -389,12 +319,14 @@ function AddToCartButton({
                   onClick={() =>
                     setShowModal(false)
                   }
-                  disabled={isLoading}
+                  disabled={
+                    isAdding ||
+                    loadingItemId !== null
+                  }
                 >
                   ×
                 </button>
               </div>
-
 
               <div className="attribute-modal-body">
                 {attributeCartItems.map(
@@ -413,20 +345,21 @@ function AddToCartButton({
                         )
                         .join(', ');
 
-
-                    /*
-                     * Остаток конкретного
-                     * варианта.
-                     */
                     const maxStock =
-                      item.attribute_stock ??
-                      0;
+                      item.attribute_stock ?? 0;
 
+                    const itemLoading =
+                      loadingItemId ===
+                      item.id;
 
                     return (
                       <div
                         key={item.id}
-                        className="cart-variant-row"
+                        className={`cart-variant-row ${
+                          maxStock <= 0
+                            ? 'out-of-stock'
+                            : ''
+                        }`}
                       >
                         <div className="cart-variant-info">
                           <div className="cart-variant-name">
@@ -436,6 +369,12 @@ function AddToCartButton({
                           <div className="cart-variant-stock">
                             Остаток: {maxStock}
                           </div>
+
+                          {maxStock <= 0 && (
+                            <div className="cart-variant-stock-error">
+                              Нет в наличии
+                            </div>
+                          )}
                         </div>
 
                         <QuantitySelector
@@ -455,7 +394,7 @@ function AddToCartButton({
                             )
                           }
                           disabled={
-                            isLoading
+                            itemLoading
                           }
                           increaseDisabled={
                             item.quantity >=
@@ -468,7 +407,6 @@ function AddToCartButton({
                 )}
               </div>
 
-
               <div className="attribute-modal-footer">
                 <button
                   type="button"
@@ -476,7 +414,10 @@ function AddToCartButton({
                   onClick={() =>
                     setShowModal(false)
                   }
-                  disabled={isLoading}
+                  disabled={
+                    isAdding ||
+                    loadingItemId !== null
+                  }
                 >
                   Закрыть
                 </button>
@@ -488,13 +429,6 @@ function AddToCartButton({
     );
   }
 
-
-  /*
-   * =========================================================
-   * НОВЫЙ ТОВАР С АТРИБУТАМИ
-   * =========================================================
-   */
-
   return (
     <>
       <button
@@ -502,10 +436,10 @@ function AddToCartButton({
         onClick={handleAdd}
         disabled={
           disabled ||
-          isLoading
+          isAdding
         }
       >
-        {isLoading
+        {isAdding
           ? 'Добавляем...'
           : disabled
             ? 'Нет в наличии'
@@ -514,12 +448,11 @@ function AddToCartButton({
               : 'В корзину'}
       </button>
 
-
       {showModal && !disabled && (
         <div
           className="attribute-modal-overlay"
           onClick={() => {
-            if (!isLoading) {
+            if (!isAdding) {
               setShowModal(false);
             }
           }}
@@ -541,12 +474,11 @@ function AddToCartButton({
                 onClick={() =>
                   setShowModal(false)
                 }
-                disabled={isLoading}
+                disabled={isAdding}
               >
                 ×
               </button>
             </div>
-
 
             <div className="attribute-modal-body">
               {attributeNames.map(
@@ -588,7 +520,7 @@ function AddToCartButton({
                               }`}
                               disabled={
                                 optionDisabled ||
-                                isLoading
+                                isAdding
                               }
                               onClick={() =>
                                 handleSelectAttribute(
@@ -608,7 +540,6 @@ function AddToCartButton({
               )}
             </div>
 
-
             <div className="attribute-modal-footer">
               <button
                 type="button"
@@ -616,7 +547,7 @@ function AddToCartButton({
                 onClick={() =>
                   setShowModal(false)
                 }
-                disabled={isLoading}
+                disabled={isAdding}
               >
                 Отмена
               </button>
@@ -629,10 +560,10 @@ function AddToCartButton({
                 }
                 disabled={
                   !isSelectionComplete ||
-                  isLoading
+                  isAdding
                 }
               >
-                {isLoading
+                {isAdding
                   ? 'Добавляем...'
                   : 'Добавить в корзину'}
               </button>
@@ -643,6 +574,5 @@ function AddToCartButton({
     </>
   );
 }
-
 
 export default AddToCartButton;
