@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   BrowserRouter,
   Routes,
   Route,
   useLocation,
+  useNavigate,
   Navigate,
 } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -28,16 +29,18 @@ import useProductStockSocket from './hooks/useProductStockSocket';
 import { fetchProfile } from './features/profile/profileSlice';
 import { fetchWishlist } from './features/wishlist/wishlistSlice';
 import { fetchOrders } from './features/orders/ordersSlice';
+import { fetchChatUnreadCount } from './features/chat/chatSlice';
+import { fetchCategories } from './features/categories/categoriesSlice';
+
 import ManagerLoginPage from './pages/ManagerLoginPage';
 import ManagerHeader from './components/ManagerHeader';
-import { fetchChatUnreadCount } from './features/chat/chatSlice';
-
 
 function AppContent() {
   useTokenRefreshTimer();
   useProductStockSocket();
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const { isAuthenticated } = useSelector(
     (state) => state.auth
@@ -47,7 +50,17 @@ function AppContent() {
     (state) => state.profile
   );
 
+  const { list: categories } = useSelector(
+    (state) => state.categories
+  );
+
   const location = useLocation();
+
+  const [activeCategory, setActiveCategory] =
+    useState(null);
+
+  const [chatOpen, setChatOpen] =
+    useState(false);
 
   const isManagerLogin =
     location.pathname === '/manager/login';
@@ -55,8 +68,8 @@ function AppContent() {
   const isManagerArea =
     location.pathname.startsWith('/manager/');
 
-
   useEffect(() => {
+    dispatch(fetchCategories());
     dispatch(fetchWishlist());
 
     if (isAuthenticated) {
@@ -65,7 +78,6 @@ function AppContent() {
       dispatch(fetchChatUnreadCount());
     }
   }, [isAuthenticated, dispatch]);
-
 
   useEffect(() => {
     if (!isAuthenticated) return undefined;
@@ -77,6 +89,13 @@ function AppContent() {
     return () => window.clearInterval(intervalId);
   }, [isAuthenticated, dispatch]);
 
+  const handleCategorySelect = (slug) => {
+    setActiveCategory(slug);
+
+    if (location.pathname !== '/') {
+      navigate('/');
+    }
+  };
 
   if (
     isAuthenticated &&
@@ -91,12 +110,19 @@ function AppContent() {
     );
   }
 
-
   return (
     <>
       {isManagerArea
         ? !isManagerLogin && <ManagerHeader />
-        : <Header />}
+        : (
+          <Header
+            categories={categories}
+            activeCategory={activeCategory}
+            onCategorySelect={handleCategorySelect}
+            chatOpen={chatOpen}
+            onChatOpen={() => setChatOpen(true)}
+          />
+        )}
 
       <main
         className={
@@ -108,7 +134,13 @@ function AppContent() {
         <Routes>
           <Route
             path="/"
-            element={<HomePage />}
+            element={
+              <HomePage
+                categories={categories}
+                activeCategory={activeCategory}
+                onCategorySelect={handleCategorySelect}
+              />
+            }
           />
 
           <Route
@@ -174,12 +206,16 @@ function AppContent() {
       </main>
 
       {!isManagerLogin &&
-        !isManagerArea &&
-        <ChatWidget />}
+        !isManagerArea && (
+          <ChatWidget
+            open={chatOpen}
+            onOpen={() => setChatOpen(true)}
+            onClose={() => setChatOpen(false)}
+          />
+        )}
     </>
   );
 }
-
 
 function App() {
   return (
@@ -188,6 +224,5 @@ function App() {
     </BrowserRouter>
   );
 }
-
 
 export default App;

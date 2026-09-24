@@ -84,15 +84,12 @@ function useProductStockSocket() {
     return () => {
       stoppedRef.current = true;
 
-      if (
-        reconnectTimerRef.current
-      ) {
+      if (reconnectTimerRef.current) {
         window.clearTimeout(
           reconnectTimerRef.current
         );
 
-        reconnectTimerRef.current =
-          null;
+        reconnectTimerRef.current = null;
       }
 
       if (socketRef.current) {

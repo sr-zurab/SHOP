@@ -14,3 +14,15 @@
   display: block;
   margin: 20px auto;
 }
+
+
+@media (max-width: 640px) {
+
+  .home-sidebar {
+    display: none;
+  }
+
+  .home-page-layout {
+    display: block;
+  }
+}

@@ -52,10 +52,51 @@
   margin-top: 0;
 }
 
+/* =========================
+   Цена и скидка
+   ========================= */
+
 .product-detail-price {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+
   font-size: 28px;
   font-weight: 700;
-  margin: 8px 0;
+
+  margin: 8px 0 12px;
+}
+
+.product-detail-old-price {
+  font-size: 17px;
+  font-weight: 400;
+  color: #999;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.product-detail-new-price {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.product-detail-discount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 5px 8px;
+
+  border-radius: 6px;
+
+  background: #e53935;
+  color: white;
+
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .product-detail-stock {
@@ -81,5 +122,22 @@
   .product-detail-content {
     grid-template-columns: 1fr;
     gap: 16px;
+  }
+
+  .product-detail-price {
+    gap: 5px 8px;
+  }
+
+  .product-detail-new-price {
+    font-size: 26px;
+  }
+
+  .product-detail-old-price {
+    font-size: 15px;
+  }
+
+  .product-detail-discount {
+    font-size: 12px;
+    padding: 4px 7px;
   }
 }

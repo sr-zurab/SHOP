@@ -325,4 +325,44 @@ describe('CartPage', () => {
     expect(calculateDiscounts).not.toHaveBeenCalled();
     expect(clearCalculation).toHaveBeenCalled();
   });
+
+  it('считает позицию доступной при product.stock = 0, если выбранный атрибут имеет остаток', () => {
+    const cartItems = [
+      createCartItem({
+        id: 125,
+        quantity: 1,
+        attribute: "60''",
+        attributeStock: 3,
+      }),
+    ];
+
+    render(
+      <Provider store={createStore(cartItems)}>
+        <MemoryRouter>
+          <CartPage />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    const item = screen
+      .getByText("диагональ: 60''")
+      .closest('.cart-item');
+
+    expect(item).not.toHaveClass('out-of-stock');
+
+    const checkbox = within(item).getByRole('checkbox');
+
+    expect(checkbox).toBeChecked();
+    expect(checkbox).not.toBeDisabled();
+
+    expect(
+      within(item).getByRole('button', {
+        name: "Увеличить 6 60''",
+      })
+    ).toBeInTheDocument();
+
+    expect(calculateDiscounts).toHaveBeenCalledWith([
+      125,
+    ]);
+  });
 });

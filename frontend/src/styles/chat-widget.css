@@ -112,3 +112,9 @@
   justify-content: center;
   cursor: pointer;
 }
+
+@media (max-width: 640px) {
+  .chat-widget-toggle {
+    display: none;
+  }
+}
