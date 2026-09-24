@@ -27,7 +27,17 @@ export const fetchOrderById = createAsyncThunk(
 
 export const createOrder = createAsyncThunk(
   'orders/create',
-  async ({ delivery_method, full_name, email, phone, address }, { rejectWithValue }) => {
+  async (
+    {
+      delivery_method,
+      full_name,
+      email,
+      phone,
+      address,
+      selected_item_ids,
+    },
+    { rejectWithValue }
+  ) => {
     try {
       const res = await authFetch('/orders/', {
         method: 'POST',
@@ -38,9 +48,14 @@ export const createOrder = createAsyncThunk(
           email,
           phone,
           address,
+          selected_item_ids,
         }),
       });
-      return await parseJsonOrThrow(res, 'Ошибка оформления заказа');
+
+      return await parseJsonOrThrow(
+        res,
+        'Ошибка оформления заказа'
+      );
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -51,8 +66,14 @@ export const cancelOrder = createAsyncThunk(
   'orders/cancel',
   async (orderId, { rejectWithValue }) => {
     try {
-      const res = await authFetch(`/orders/${orderId}/cancel/`, { method: 'POST' });
-      return await parseJsonOrThrow(res, 'Ошибка отмены заказа');
+      const res = await authFetch(`/orders/${orderId}/cancel/`, {
+        method: 'POST',
+      });
+
+      return await parseJsonOrThrow(
+        res,
+        'Ошибка отмены заказа'
+      );
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -61,15 +82,27 @@ export const cancelOrder = createAsyncThunk(
 
 export const fetchManagerOrders = createAsyncThunk(
   'orders/fetchManager',
-  async ({ status = '', search = '', page = 1 } = {}, { rejectWithValue }) => {
+  async (
+    { status = '', search = '', page = 1 } = {},
+    { rejectWithValue }
+  ) => {
     try {
       const params = new URLSearchParams();
+
       if (status) params.set('status', status);
       if (search) params.set('search', search);
       if (page) params.set('page', page);
+
       const query = params.toString();
-      const res = await authFetch(`/orders/manager/${query ? `?${query}` : ''}`);
-      return await parseJsonOrThrow(res, 'Ошибка загрузки заказов');
+
+      const res = await authFetch(
+        `/orders/manager/${query ? `?${query}` : ''}`
+      );
+
+      return await parseJsonOrThrow(
+        res,
+        'Ошибка загрузки заказов'
+      );
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -80,8 +113,14 @@ export const fetchManagerOrderUnreadCount = createAsyncThunk(
   'orders/fetchManagerUnreadCount',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await authFetch('/orders/manager/unread-count/');
-      return await parseJsonOrThrow(res, 'Ошибка загрузки счётчика заказов');
+      const res = await authFetch(
+        '/orders/manager/unread-count/'
+      );
+
+      return await parseJsonOrThrow(
+        res,
+        'Ошибка загрузки счётчика заказов'
+      );
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -92,8 +131,17 @@ export const markManagerOrdersRead = createAsyncThunk(
   'orders/markManagerRead',
   async (_, { rejectWithValue }) => {
     try {
-      const res = await authFetch('/orders/manager/mark-read/', { method: 'POST' });
-      return await parseJsonOrThrow(res, 'Ошибка обновления уведомлений заказов');
+      const res = await authFetch(
+        '/orders/manager/mark-read/',
+        {
+          method: 'POST',
+        }
+      );
+
+      return await parseJsonOrThrow(
+        res,
+        'Ошибка обновления уведомлений заказов'
+      );
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -104,12 +152,21 @@ export const updateManagerOrderStatus = createAsyncThunk(
   'orders/updateManagerStatus',
   async ({ orderId, status }, { rejectWithValue }) => {
     try {
-      const res = await authFetch(`/orders/manager/${orderId}/status/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      return await parseJsonOrThrow(res, 'Ошибка смены статуса');
+      const res = await authFetch(
+        `/orders/manager/${orderId}/status/`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      return await parseJsonOrThrow(
+        res,
+        'Ошибка смены статуса'
+      );
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -120,12 +177,21 @@ export const addManagerOrderComment = createAsyncThunk(
   'orders/addManagerComment',
   async ({ orderId, text }, { rejectWithValue }) => {
     try {
-      const res = await authFetch(`/orders/manager/${orderId}/comments/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-      return await parseJsonOrThrow(res, 'Ошибка добавления комментария');
+      const res = await authFetch(
+        `/orders/manager/${orderId}/comments/`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text }),
+        }
+      );
+
+      return await parseJsonOrThrow(
+        res,
+        'Ошибка добавления комментария'
+      );
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -134,6 +200,7 @@ export const addManagerOrderComment = createAsyncThunk(
 
 function upsertOrder(list, order) {
   const index = list.findIndex((o) => o.id === order.id);
+
   if (index >= 0) {
     list[index] = order;
   } else {
@@ -143,6 +210,7 @@ function upsertOrder(list, order) {
 
 const ordersSlice = createSlice({
   name: 'orders',
+
   initialState: {
     list: [],
     managerList: [],
@@ -155,60 +223,74 @@ const ordersSlice = createSlice({
     loading: false,
     error: null,
   },
+
   reducers: {
     resetLastCreated(state) {
       state.lastCreated = null;
     },
   },
+
   extraReducers: (builder) => {
     builder
       .addCase(fetchOrders.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+
       .addCase(fetchOrders.fulfilled, (state, action) => {
         state.list = action.payload;
         state.loading = false;
       })
+
       .addCase(fetchOrders.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+
       .addCase(fetchOrderById.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+
       .addCase(fetchOrderById.fulfilled, (state, action) => {
         upsertOrder(state.list, action.payload);
         state.loading = false;
       })
+
       .addCase(fetchOrderById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+
       .addCase(createOrder.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+
       .addCase(createOrder.fulfilled, (state, action) => {
         state.lastCreated = action.payload;
         state.list.unshift(action.payload);
         state.loading = false;
       })
+
       .addCase(createOrder.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+
       .addCase(cancelOrder.fulfilled, (state, action) => {
         upsertOrder(state.list, action.payload);
       })
+
       .addCase(cancelOrder.rejected, (state, action) => {
         state.error = action.payload;
       })
+
       .addCase(fetchManagerOrders.pending, (state) => {
         state.managerLoading = true;
         state.error = null;
       })
+
       .addCase(fetchManagerOrders.fulfilled, (state, action) => {
         state.managerList = action.payload.results;
         state.managerCount = action.payload.count;
@@ -216,35 +298,56 @@ const ordersSlice = createSlice({
         state.managerPrevious = action.payload.previous;
         state.managerLoading = false;
       })
+
       .addCase(fetchManagerOrders.rejected, (state, action) => {
         state.managerLoading = false;
         state.error = action.payload;
       })
+
       .addCase(fetchManagerOrderUnreadCount.fulfilled, (state, action) => {
         state.managerUnreadCount = action.payload.count;
       })
+
       .addCase(markManagerOrdersRead.fulfilled, (state) => {
         state.managerUnreadCount = 0;
       })
+
       .addCase(updateManagerOrderStatus.fulfilled, (state, action) => {
         upsertOrder(state.managerList, action.payload);
         upsertOrder(state.list, action.payload);
       })
+
       .addCase(updateManagerOrderStatus.rejected, (state, action) => {
         state.error = action.payload;
       })
+
       .addCase(addManagerOrderComment.fulfilled, (state, action) => {
         const comment = action.payload;
         const orderId = action.meta.arg.orderId;
-        const managerOrder = state.managerList.find((o) => o.id === orderId);
+
+        const managerOrder = state.managerList.find(
+          (o) => o.id === orderId
+        );
+
         if (managerOrder) {
-          managerOrder.comments = [...(managerOrder.comments || []), comment];
+          managerOrder.comments = [
+            ...(managerOrder.comments || []),
+            comment,
+          ];
         }
-        const customerOrder = state.list.find((o) => o.id === orderId);
+
+        const customerOrder = state.list.find(
+          (o) => o.id === orderId
+        );
+
         if (customerOrder) {
-          customerOrder.comments = [...(customerOrder.comments || []), comment];
+          customerOrder.comments = [
+            ...(customerOrder.comments || []),
+            comment,
+          ];
         }
       })
+
       .addCase(addManagerOrderComment.rejected, (state, action) => {
         state.error = action.payload;
       });
@@ -252,4 +355,5 @@ const ordersSlice = createSlice({
 });
 
 export const { resetLastCreated } = ordersSlice.actions;
+
 export default ordersSlice.reducer;

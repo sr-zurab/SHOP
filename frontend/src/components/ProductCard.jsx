@@ -59,6 +59,13 @@ function ProductCard({ product }) {
     ? false
     : !product.in_stock;
 
+  const discount = product.discount;
+
+  const hasPercentDiscount =
+    discount?.type === 'percent' &&
+    discount.price_after_discount !== null &&
+    Number(discount.amount) > 0;
+
   return (
     <div
       className={`product-card ${
@@ -102,9 +109,25 @@ function ProductCard({ product }) {
           {product.name}
         </h3>
 
-        <p className="product-card-price">
-          {product.price} ₽
-        </p>
+        {hasPercentDiscount ? (
+          <div className="product-card-price">
+            <span className="product-card-old-price">
+              {product.price} ₽
+            </span>
+
+            <span className="product-card-new-price">
+              {discount.price_after_discount} ₽
+            </span>
+
+            <span className="product-card-discount">
+              −{discount.value}%
+            </span>
+          </div>
+        ) : (
+          <p className="product-card-price">
+            {product.price} ₽
+          </p>
+        )}
       </Link>
 
       <AddToCartButton

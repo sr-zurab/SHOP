@@ -6,6 +6,9 @@ import {
   createOrder,
   resetLastCreated,
 } from '../features/orders/ordersSlice';
+import {
+  calculateDiscounts,
+} from '../features/discounts/discountsSlice';
 
 function CheckoutPage() {
   const dispatch = useDispatch();
@@ -18,6 +21,14 @@ function CheckoutPage() {
 
   const { loading, error, lastCreated } = useSelector(
     (state) => state.orders
+  );
+
+  const {
+    calculation: discountCalculation,
+    loading: discountLoading,
+    error: discountError,
+  } = useSelector(
+    (state) => state.discounts
   );
 
   const { isAuthenticated } = useSelector(
@@ -39,6 +50,23 @@ function CheckoutPage() {
     dispatch(resetLastCreated());
     dispatch(fetchCart());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (
+      cartLoading ||
+      selectedItemIds.length === 0
+    ) {
+      return;
+    }
+
+    dispatch(
+      calculateDiscounts(selectedItemIds)
+    );
+  }, [
+    dispatch,
+    cartLoading,
+    selectedItemIds,
+  ]);
 
   const handleChange = (e) => {
     setForm({
@@ -264,6 +292,12 @@ function CheckoutPage() {
             </p>
           )}
 
+          {discountError && (
+            <p className="auth-error">
+              {discountError}
+            </p>
+          )}
+
           {error && (
             <p className="auth-error">
               {error}
@@ -341,13 +375,43 @@ function CheckoutPage() {
             );
           })}
 
-          <div className="checkout-summary-total">
-            <span>Итого:</span>
+          {discountCalculation && !discountLoading ? (
+            <>
+              <div className="checkout-summary-total">
+                <span>Товары:</span>
 
-            <strong>
-              {selectedTotal.toFixed(2)} ₽
-            </strong>
-          </div>
+                <span>
+                  {discountCalculation.subtotal} ₽
+                </span>
+              </div>
+
+              <div className="checkout-summary-total">
+                <span>Скидка:</span>
+
+                <span>
+                  −{discountCalculation.discount_total} ₽
+                </span>
+              </div>
+
+              <div className="checkout-summary-total">
+                <span>Итого:</span>
+
+                <strong>
+                  {discountCalculation.total} ₽
+                </strong>
+              </div>
+            </>
+          ) : (
+            <div className="checkout-summary-total">
+              <span>Итого:</span>
+
+              <strong>
+                {discountLoading
+                  ? 'Расчёт...'
+                  : `${selectedTotal.toFixed(2)} ₽`}
+              </strong>
+            </div>
+          )}
         </div>
       </div>
     </div>

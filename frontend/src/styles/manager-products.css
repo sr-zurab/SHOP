@@ -1,0 +1,445 @@
+.manager-products-page {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+  gap: 24px;
+}
+
+.manager-section-header h1 {
+  font-size: 20px;
+  margin: 0 0 16px;
+}
+
+.manager-product-form {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manager-product-form h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.manager-product-form .form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.manager-product-form input,
+.manager-product-form select,
+.manager-product-form textarea {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.manager-product-form textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  flex: 1;
+}
+
+.checkbox-label input {
+  flex: none;
+  width: auto;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.manager-products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manager-product-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.manager-product-row img,
+.manager-product-no-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f0f0f0;
+  flex-shrink: 0;
+}
+
+.manager-product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.manager-product-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.manager-product-meta {
+  font-size: 12px;
+  color: #999;
+}
+
+.manager-product-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.manager-product-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  color: #555;
+}
+
+.manager-product-actions button:hover {
+  background: #f0f0f0;
+}
+
+.manager-products-sidebar {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 16px;
+  height: fit-content;
+}
+
+.manager-products-sidebar h2 {
+  margin-top: 0;
+  font-size: 16px;
+}
+
+/* Форма добавления категории */
+
+.manager-category-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.manager-category-form input,
+.manager-category-form select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+}
+
+.manager-category-form button {
+  width: 100%;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  background: #1a1a1a;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.manager-category-form button:hover {
+  background: #333;
+}
+
+.manager-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Дерево категорий менеджера */
+
+.manager-category-tree-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.manager-category-item-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  border-radius: 8px;
+}
+
+.manager-category-item-row:hover {
+  background: #f7f7f8;
+}
+
+.manager-category-toggle {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.manager-category-toggle:hover {
+  background: #eee;
+}
+
+.manager-category-toggle-empty {
+  cursor: default;
+}
+
+.manager-category-toggle-empty:hover {
+  background: transparent;
+}
+
+.manager-category-name {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #444;
+  text-align: left;
+  cursor: default;
+}
+
+.manager-category-delete {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  border-radius: 5px;
+}
+
+.manager-category-delete:hover {
+  background: #eee;
+  color: #c00;
+}
+
+.manager-category-children {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 20px;
+}
+
+/* Старый класс оставляем для совместимости */
+
+.manager-category-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.manager-category-item:hover {
+  background: #f7f7f8;
+}
+
+.manager-category-item button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+}
+
+.manager-list-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.manager-list-search {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.manager-list-sort {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+}
+
+/* Скидки товара менеджера */
+
+.manager-discounts-section {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.manager-discounts-section .manager-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.manager-discounts-section .manager-section-header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.manager-discount-form {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fafafa;
+}
+
+.manager-discount-form h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.manager-discount-form .form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.manager-discount-form input,
+.manager-discount-form select,
+.manager-discount-form textarea {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+}
+
+.manager-discount-form textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.manager-discount-form label:not(.checkbox-label) {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #555;
+}
+
+.manager-discount-form label:not(.checkbox-label) input {
+  width: 100%;
+}
+
+.manager-discounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manager-discount-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #eee;
+  border-radius: 10px;
+}
+
+.manager-discount-row .checkbox-label {
+  min-width: 0;
+}
+
+.manager-discount-row .checkbox-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-discount-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #999;
+}
+
+.manager-discount-info span:first-child {
+  color: #444;
+  font-weight: 600;
+}
+
+@media (max-width: 700px) {
+  .manager-discount-form .form-row {
+    flex-direction: column;
+  }
+
+  .manager-discount-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .manager-discount-info {
+    margin-left: 28px;
+  }
+}

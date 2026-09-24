@@ -14,7 +14,10 @@
 @import './profile-reviews.css';
 @import './orders-page.css';
 @import './chat-widget.css';
+@import './manager.css';
 @import './manager-chat.css';
 @import './manager-login.css';
+@import './manager-products.css';
 @import './manager-attributes.css';
+@import './manager-orders.css';
 @import './search-bar.css';

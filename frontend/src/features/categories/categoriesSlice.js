@@ -15,14 +15,22 @@ export const fetchCategories = createAsyncThunk(
 
 export const createCategory = createAsyncThunk(
   'categories/create',
-  async ({ name, slug }, { rejectWithValue }) => {
+  async ({ name, slug, parent = null }, { rejectWithValue }) => {
     try {
       const res = await authFetch('/categories/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, slug }),
+        body: JSON.stringify({
+          name,
+          slug,
+          parent,
+        }),
       });
-      return await parseJsonOrThrow(res, 'Ошибка создания категории');
+
+      return await parseJsonOrThrow(
+        res,
+        'Ошибка создания категории'
+      );
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -33,11 +41,21 @@ export const deleteCategory = createAsyncThunk(
   'categories/delete',
   async (slug, { rejectWithValue }) => {
     try {
-      const res = await authFetch(`/categories/${slug}/`, { method: 'DELETE' });
+      const res = await authFetch(
+        `/categories/${slug}/`,
+        {
+          method: 'DELETE',
+        }
+      );
+
       if (!res.ok && res.status !== 204) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || 'Ошибка удаления категории');
+
+        throw new Error(
+          errorData.detail || 'Ошибка удаления категории'
+        );
       }
+
       return slug;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -47,31 +65,40 @@ export const deleteCategory = createAsyncThunk(
 
 const categoriesSlice = createSlice({
   name: 'categories',
+
   initialState: {
     list: [],
     loading: false,
     error: null,
   },
+
   reducers: {},
+
   extraReducers: (builder) => {
     builder
       .addCase(fetchCategories.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.list = action.payload.results || action.payload;
         state.loading = false;
       })
+
       .addCase(fetchCategories.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+
       .addCase(createCategory.fulfilled, (state, action) => {
         state.list.push(action.payload);
       })
+
       .addCase(deleteCategory.fulfilled, (state, action) => {
-        state.list = state.list.filter((c) => c.slug !== action.payload);
+        state.list = state.list.filter(
+          (category) => category.slug !== action.payload
+        );
       });
   },
 });

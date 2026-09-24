@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchProductBySlug, clearCurrentProduct } from '../features/products/productsSlice';
-import { fetchReviews } from '../features/reviews/reviewsSlice';
-import { fetchCart } from '../features/cart/cartSlice';
-import { addItem } from '../features/cart/cartSlice';
+import {
+  fetchProductBySlug,
+  clearCurrentProduct,
+} from '../features/products/productsSlice';
+import {
+  fetchReviews,
+  } from '../features/reviews/reviewsSlice';
+import {
+  fetchCart,
+  addItem,
+} from '../features/cart/cartSlice';
 import AddToCartButton from '../components/AddToCartButton';
 import AttributeSelector from '../components/AttributeSelector';
 import ReviewForm from '../components/ReviewForm';
@@ -13,15 +20,23 @@ import ReviewList from '../components/ReviewList';
 function ProductDetailPage() {
   const { slug } = useParams();
   const dispatch = useDispatch();
-  const { current: product, loading, error } = useSelector((state) => state.products);
+
+  const {
+    current: product,
+    loading,
+    error,
+  } = useSelector((state) => state.products);
+
   const { data: cart } = useSelector((state) => state.cart);
   const { isAuthenticated } = useSelector((state) => state.auth);
+
   const [activeImage, setActiveImage] = useState(null);
   const [selectedAttributes, setSelectedAttributes] = useState({});
   const [showAttrModal, setShowAttrModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchProductBySlug(slug));
+
     return () => {
       dispatch(clearCurrentProduct());
     };
@@ -29,7 +44,12 @@ function ProductDetailPage() {
 
   useEffect(() => {
     if (product) {
-      setActiveImage(product.main_image || product.images?.[0]?.image || product.thumbnail);
+      setActiveImage(
+        product.main_image ||
+        product.images?.[0]?.image ||
+        product.thumbnail
+      );
+
       dispatch(fetchReviews(product.id));
       dispatch(fetchCart());
     }
@@ -37,69 +57,133 @@ function ProductDetailPage() {
 
   const findCartItem = (productId, attrs) => {
     if (!cart?.items) return null;
-    return cart.items.find((item) =>
-      item.product.id === productId &&
-      JSON.stringify(item.selected_attributes || {}) === JSON.stringify(attrs || {})
+
+    return cart.items.find(
+      (item) =>
+        item.product.id === productId &&
+        JSON.stringify(item.selected_attributes || {}) ===
+          JSON.stringify(attrs || {})
     );
   };
 
-  const isInCart = product && findCartItem(product.id, selectedAttributes);
+  const isInCart =
+    product &&
+    findCartItem(
+      product.id,
+      selectedAttributes
+    );
+
   const isFullySelected = product?.grouped_attributes
-    ? Object.keys(product.grouped_attributes).every((name) => selectedAttributes[name])
+    ? Object.keys(product.grouped_attributes).every(
+        (name) => selectedAttributes[name]
+      )
     : true;
 
-  if (loading) return <p className="loading-text">Загрузка...</p>;
-  if (error) return <p className="empty-text">Товар не найден</p>;
+  if (loading) {
+    return (
+      <p className="loading-text">
+        Загрузка...
+      </p>
+    );
+  }
+
+  if (error) {
+    return (
+      <p className="empty-text">
+        Товар не найден
+      </p>
+    );
+  }
+
   if (!product) return null;
+
+  const discount = product.discount;
+
+  const hasPercentDiscount =
+    discount?.type === 'percent' &&
+    discount.price_after_discount !== null &&
+    Number(discount.amount) > 0;
 
   const handleAddToCart = async () => {
     if (!isFullySelected) {
       setShowAttrModal(true);
       return;
     }
+
     await dispatch(addItemWithAttrs());
     setShowAttrModal(false);
   };
 
   const addItemWithAttrs = () => {
-    return dispatch(addItem({
-      productId: product.id,
-      quantity: 1,
-      selectedAttributes,
-    }));
+    return dispatch(
+      addItem({
+        productId: product.id,
+        quantity: 1,
+        selectedAttributes,
+      })
+    );
   };
 
   return (
     <div className="product-detail">
-      <Link to="/" className="back-link">← Назад к товарам</Link>
+      <Link
+        to="/"
+        className="back-link"
+      >
+        ← Назад к товарам
+      </Link>
 
       <div className="product-detail-content">
         <div className="product-detail-gallery">
           <div className="product-detail-main-image">
             {activeImage ? (
-              <img src={activeImage} alt={product.name} />
+              <img
+                src={activeImage}
+                alt={product.name}
+              />
             ) : (
-              <div className="product-card-no-image">Нет фото</div>
+              <div className="product-card-no-image">
+                Нет фото
+              </div>
             )}
           </div>
 
-          {(product.main_image || product.images?.length > 0) && (
+          {(product.main_image ||
+            product.images?.length > 0) && (
             <div className="product-detail-thumbnails">
               {product.main_image && (
                 <img
-                  src={product.thumbnail || product.main_image}
+                  src={
+                    product.thumbnail ||
+                    product.main_image
+                  }
                   alt={`${product.name} главная картинка`}
-                  className={activeImage === product.main_image ? 'active' : ''}
-                  onClick={() => setActiveImage(product.main_image)}
+                  className={
+                    activeImage === product.main_image
+                      ? 'active'
+                      : ''
+                  }
+                  onClick={() =>
+                    setActiveImage(
+                      product.main_image
+                    )
+                  }
                 />
               )}
+
               {product.images.map((img) => (
                 <img
                   key={img.id}
                   src={img.thumbnail}
                   alt={product.name}
-                  className={activeImage === img.image ? 'active' : ''}
-                  onClick={() => setActiveImage(img.image)}
+                  className={
+                    activeImage === img.image
+                      ? 'active'
+                      : ''
+                  }
+                  onClick={() =>
+                    setActiveImage(img.image)
+                  }
                 />
               ))}
             </div>
@@ -112,56 +196,141 @@ function ProductDetailPage() {
           {product.average_rating && (
             <div className="product-rating-summary">
               <span className="rating-stars">
-                {'★'.repeat(Math.round(product.average_rating))}
-                {'☆'.repeat(5 - Math.round(product.average_rating))}
+                {'★'.repeat(
+                  Math.round(
+                    product.average_rating
+                  )
+                )}
+                {'☆'.repeat(
+                  5 -
+                    Math.round(
+                      product.average_rating
+                    )
+                )}
               </span>
-              <span className="rating-value">{product.average_rating}</span>
-              <span className="rating-count">({product.reviews_count} отзывов)</span>
+
+              <span className="rating-value">
+                {product.average_rating}
+              </span>
+
+              <span className="rating-count">
+                ({product.reviews_count} отзывов)
+              </span>
             </div>
           )}
 
-          <p className="product-detail-price">{product.price} ₽</p>
-          <p className={`product-detail-stock ${product.in_stock ? 'in-stock' : 'out-of-stock'}`}>
-            {product.in_stock ? `В наличии` : 'Нет в наличии'}
+          {hasPercentDiscount ? (
+            <div className="product-detail-price">
+              <span className="product-detail-old-price">
+                {product.price} ₽
+              </span>
+
+              <span className="product-detail-new-price">
+                {discount.price_after_discount} ₽
+              </span>
+
+              <span className="product-detail-discount">
+                −{discount.value}%
+              </span>
+            </div>
+          ) : (
+            <p className="product-detail-price">
+              {product.price} ₽
+            </p>
+          )}
+
+          <p
+            className={`product-detail-stock ${
+              product.in_stock
+                ? 'in-stock'
+                : 'out-of-stock'
+            }`}
+          >
+            {product.in_stock
+              ? 'В наличии'
+              : 'Нет в наличии'}
           </p>
 
           {product.description && (
-            <p className="product-detail-description">{product.description}</p>
+            <p className="product-detail-description">
+              {product.description}
+            </p>
           )}
 
-          {product.grouped_attributes && Object.keys(product.grouped_attributes).length > 0 && (
-            <AttributeSelector
-              groupedAttributes={product.grouped_attributes}
-              onChange={setSelectedAttributes}
-              selectedAttributes={selectedAttributes}
-            />
-          )}
+          {product.grouped_attributes &&
+            Object.keys(
+              product.grouped_attributes
+            ).length > 0 && (
+              <AttributeSelector
+                groupedAttributes={
+                  product.grouped_attributes
+                }
+                onChange={
+                  setSelectedAttributes
+                }
+                selectedAttributes={
+                  selectedAttributes
+                }
+              />
+            )}
 
           <AddToCartButton
             productId={product.id}
             product={product}
-            selectedAttributes={selectedAttributes}
+            selectedAttributes={
+              selectedAttributes
+            }
             isInCart={isInCart}
-            isFullySelected={isFullySelected}
-            onAddToCart={handleAddToCart}
+            isFullySelected={
+              isFullySelected
+            }
+            onAddToCart={
+              handleAddToCart
+            }
             disabled={!product.in_stock}
           />
         </div>
       </div>
 
       {showAttrModal && (
-        <div className="attr-modal-overlay" onClick={() => setShowAttrModal(false)}>
-          <div className="attr-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Выберите параметры</h3>
+        <div
+          className="attr-modal-overlay"
+          onClick={() =>
+            setShowAttrModal(false)
+          }
+        >
+          <div
+            className="attr-modal"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+          >
+            <h3>
+              Выберите параметры
+            </h3>
+
             <AttributeSelector
-              groupedAttributes={product.grouped_attributes}
-              onChange={setSelectedAttributes}
-              selectedAttributes={selectedAttributes}
+              groupedAttributes={
+                product.grouped_attributes
+              }
+              onChange={
+                setSelectedAttributes
+              }
+              selectedAttributes={
+                selectedAttributes
+              }
             />
+
             <div className="attr-modal-actions">
-              <button className="btn btn-outline" onClick={() => setShowAttrModal(false)}>
+              <button
+                className="btn btn-outline"
+                onClick={() =>
+                  setShowAttrModal(false)
+                }
+              >
                 Отмена
               </button>
+
               <button
                 className="btn btn-primary"
                 onClick={() => {
@@ -181,7 +350,13 @@ function ProductDetailPage() {
 
       <div className="product-reviews-section">
         <h2>Отзывы</h2>
-        {isAuthenticated && <ReviewForm productId={product.id} />}
+
+        {isAuthenticated && (
+          <ReviewForm
+            productId={product.id}
+          />
+        )}
+
         <ReviewList />
       </div>
     </div>

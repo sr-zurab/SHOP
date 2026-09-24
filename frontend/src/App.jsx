@@ -20,6 +20,7 @@ import ProfilePage from './pages/ProfilePage';
 import ManagerChatPage from './pages/ManagerChatPage';
 import ManagerProductsPage from './pages/ManagerProductsPage';
 import ManagerOrdersPage from './pages/ManagerOrdersPage';
+import ManagerDiscountsPage from './pages/ManagerDiscountsPage';
 import ChatWidget from './components/ChatWidget';
 import useTokenRefreshTimer from './hooks/useTokenRefreshTimer';
 import useProductStockSocket from './hooks/useProductStockSocket';
@@ -158,6 +159,11 @@ function AppContent() {
           <Route
             path="/manager/products"
             element={<ManagerProductsPage />}
+          />
+
+          <Route
+            path="/manager/discounts"
+            element={<ManagerDiscountsPage />}
           />
 
           <Route

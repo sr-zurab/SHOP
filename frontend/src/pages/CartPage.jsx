@@ -2,14 +2,26 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCart, clearCart } from '../features/cart/cartSlice';
+import {
+  calculateDiscounts,
+  clearCalculation,
+} from '../features/discounts/discountsSlice';
 import CartQuantityControl from '../components/CartQuantityControl';
 import RemoveFromCartButton from '../components/RemoveFromCartButton';
 
 function CartPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
   const { data: cart, loading } = useSelector(
     (state) => state.cart
+  );
+
+  const {
+    calculation,
+    loading: discountLoading,
+  } = useSelector(
+    (state) => state.discounts
   );
 
   const [selectedItemIds, setSelectedItemIds] = useState([]);
@@ -47,6 +59,15 @@ function CartPage() {
       );
     });
   }, [cart?.items]);
+
+  useEffect(() => {
+    if (selectedItemIds.length === 0) {
+      dispatch(clearCalculation());
+      return;
+    }
+
+    dispatch(calculateDiscounts(selectedItemIds));
+  }, [dispatch, selectedItemIds]);
 
   const formatAttributes = (attrs) => {
     if (!attrs || Object.keys(attrs).length === 0) {
@@ -110,11 +131,20 @@ function CartPage() {
     selectedItemIds.includes(item.id)
   );
 
-  const selectedTotal = selectedItems.reduce(
+  const selectedSubtotal = selectedItems.reduce(
     (sum, item) =>
       sum + Number(item.total_price || 0),
     0
   );
+
+  const discountTotal = Number(
+    calculation?.discount_total || 0
+  );
+
+  const checkoutTotal =
+    calculation?.total !== undefined
+      ? Number(calculation.total)
+      : selectedSubtotal;
 
   const toggleItem = (item) => {
     if (isItemOutOfStock(item)) {
@@ -289,18 +319,41 @@ function CartPage() {
         </button>
 
         <div className="cart-total">
-          <span>К оформлению:</span>
+          <div>
+            <span>Товары:</span>
 
-          <strong>
-            {selectedTotal.toFixed(2)} ₽
-          </strong>
+            <strong>
+              {calculation
+                ? Number(calculation.subtotal).toFixed(2)
+                : selectedSubtotal.toFixed(2)} ₽
+            </strong>
+          </div>
+
+          {discountTotal > 0 && (
+            <div className="cart-discount">
+              <span>Скидка:</span>
+
+              <strong>
+                −{discountTotal.toFixed(2)} ₽
+              </strong>
+            </div>
+          )}
+
+          <div>
+            <span>К оформлению:</span>
+
+            <strong>
+              {checkoutTotal.toFixed(2)} ₽
+            </strong>
+          </div>
         </div>
 
         <button
           className="btn btn-primary checkout-btn"
           onClick={handleCheckout}
           disabled={
-            selectedItemIds.length === 0
+            selectedItemIds.length === 0 ||
+            discountLoading
           }
         >
           Оформить выбранные
