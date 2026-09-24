@@ -151,3 +151,92 @@
   font-size: 12px;
   cursor: pointer;
 }
+
+/* =========================================
+   Мобильная адаптация профиля
+   ========================================= */
+
+.profile-logout-section {
+  display: none;
+}
+
+@media (max-width: 640px) {
+
+  .profile-page {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 16px 12px 96px;
+  }
+
+  .profile-page h1 {
+    font-size: 24px;
+    margin: 0 4px 16px;
+  }
+
+  .profile-section {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+  }
+
+  .profile-section h2 {
+    font-size: 17px;
+    margin-bottom: 12px;
+  }
+
+  .profile-username,
+  .profile-joined {
+    font-size: 14px;
+    margin: 8px 0;
+  }
+
+  .profile-section > .btn {
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .profile-form {
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .profile-form label {
+    font-size: 14px;
+  }
+
+  .profile-form input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 42px;
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+
+  .profile-form .btn {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  /*
+     Выход показываем только
+     в мобильном профиле.
+  */
+
+  .profile-logout-section {
+    display: block;
+  }
+
+  .profile-logout-section .btn {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+}

@@ -8,19 +8,18 @@ import {
   Package,
   Menu,
   X,
-  Grid2X2,
   MessageCircle,
+  Grid3X3,
 } from 'lucide-react';
+
 import AuthForm from './AuthForm';
 import LogoutButton from './LogoutButton';
 import CategoryList from './CategoryList';
 
 function Header({
-  categories,
-  activeCategory,
+  categories = [],
+  activeCategory = null,
   onCategorySelect,
-  chatOpen,
-  onChatOpen,
 }) {
   const { isAuthenticated } = useSelector(
     (state) => state.auth
@@ -41,162 +40,228 @@ function Header({
     (state) => state.orders.list.length
   );
 
-  const formatCount = (count) =>
-    count > 99 ? '99+' : count;
+  const unreadChatCount = useSelector(
+    (state) => state.chat.unreadCount
+  );
 
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [categoriesOpen, setCategoriesOpen] =
+  const [categoryOpen, setCategoryOpen] =
     useState(false);
 
-  const handleCategorySelect = (slug) => {
-    onCategorySelect(slug);
-    setCategoriesOpen(false);
+  const formatCount = (count) =>
+    count > 99 ? '99+' : count;
+
+  const closeMobilePanels = () => {
+    setCategoryOpen(false);
     setMenuOpen(false);
   };
 
-  const handleProfileClick = () => {
-    if (isAuthenticated) {
-      return;
+  const handleCategorySelect = (slug) => {
+    if (onCategorySelect) {
+      onCategorySelect(slug);
     }
 
-    setAuthOpen(true);
+    setCategoryOpen(false);
+  };
+
+  const handleMobileChatOpen = () => {
+    /*
+     * ChatWidget слушает это событие и открывает
+     * своё окно чата.
+     */
+    window.dispatchEvent(
+      new CustomEvent('shop:open-chat')
+    );
   };
 
   return (
-    <header className="site-header">
-      <div className="header-inner">
-        <Link
-          to="/"
-          className="logo"
-        >
-          Магазин
-        </Link>
-
-        <button
-          className="menu-toggle"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Меню"
-        >
-          {menuOpen ? (
-            <X size={24} />
-          ) : (
-            <Menu size={24} />
-          )}
-        </button>
-
-        {menuOpen && (
-          <div
-            className="menu-overlay"
-            onClick={() => setMenuOpen(false)}
-          />
-        )}
-
-        <nav
-          className={`header-nav ${
-            menuOpen ? 'open' : ''
-          }`}
-        >
+    <>
+      <header className="site-header">
+        <div className="header-inner">
           <Link
-            to="/cart"
-            className="icon-link cart-link"
-            aria-label="Корзина"
-            onClick={() => setMenuOpen(false)}
+            to="/"
+            className="logo"
+            onClick={closeMobilePanels}
           >
-            <ShoppingCart size={20} />
-
-            <span className="icon-link-label">
-              Корзина
-            </span>
-
-            {cartCount > 0 && (
-              <span className="cart-badge">
-                {formatCount(cartCount)}
-              </span>
-            )}
+            Магазин
           </Link>
 
-          <Link
-            to="/wishlist"
-            className="icon-link"
-            aria-label="Избранное"
-            onClick={() => setMenuOpen(false)}
+          <button
+            className="menu-toggle"
+            onClick={() =>
+              setMenuOpen((value) => !value)
+            }
+            aria-label="Меню"
+            aria-expanded={menuOpen}
           >
-            <Heart size={20} />
-
-            <span className="icon-link-label">
-              Избранное
-            </span>
-
-            {wishlistCount > 0 && (
-              <span className="cart-badge">
-                {formatCount(wishlistCount)}
-              </span>
+            {menuOpen ? (
+              <X size={24} />
+            ) : (
+              <Menu size={24} />
             )}
-          </Link>
+          </button>
 
-          {isAuthenticated && (
-            <>
-              <Link
-                to="/profile"
-                className="icon-link"
-                aria-label="Профиль"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
-              >
-                <User size={20} />
-
-                <span className="icon-link-label">
-                  Профиль
-                </span>
-              </Link>
-
-              <Link
-                to="/orders"
-                className="icon-link"
-                aria-label="Мои заказы"
-                onClick={() =>
-                  setMenuOpen(false)
-                }
-              >
-                <Package size={20} />
-
-                <span className="icon-link-label">
-                  Мои заказы
-                </span>
-
-                {ordersCount > 0 && (
-                  <span className="cart-badge">
-                    {formatCount(ordersCount)}
-                  </span>
-                )}
-              </Link>
-            </>
+          {menuOpen && (
+            <div
+              className="menu-overlay"
+              onClick={() =>
+                setMenuOpen(false)
+              }
+            />
           )}
 
-          {isAuthenticated ? (
-            <LogoutButton />
-          ) : (
-            <button
-              className="btn btn-outline"
-              onClick={() => {
-                setAuthOpen(true);
-                setMenuOpen(false);
-              }}
+          <nav
+            className={`header-nav ${
+              menuOpen ? 'open' : ''
+            }`}
+          >
+            <Link
+              to="/cart"
+              className="icon-link cart-link"
+              aria-label="Корзина"
+              onClick={closeMobilePanels}
             >
-              Войти
-            </button>
-          )}
-        </nav>
-      </div>
+              <ShoppingCart size={20} />
 
-      <div
-        className={`mobile-category-panel ${
-          categoriesOpen ? 'open' : ''
-        }`}
-      >
-        {categoriesOpen && (
+              <span className="icon-link-label">
+                Корзина
+              </span>
+
+              {cartCount > 0 && (
+                <span className="cart-badge">
+                  {formatCount(cartCount)}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              to="/wishlist"
+              className="icon-link"
+              aria-label="Избранное"
+              onClick={closeMobilePanels}
+            >
+              <Heart size={20} />
+
+              <span className="icon-link-label">
+                Избранное
+              </span>
+
+              {wishlistCount > 0 && (
+                <span className="cart-badge">
+                  {formatCount(wishlistCount)}
+                </span>
+              )}
+            </Link>
+
+            {isAuthenticated && (
+              <>
+                <Link
+                  to="/profile"
+                  className="icon-link"
+                  aria-label="Профиль"
+                  onClick={closeMobilePanels}
+                >
+                  <User size={20} />
+
+                  <span className="icon-link-label">
+                    Профиль
+                  </span>
+                </Link>
+
+                <Link
+                  to="/orders"
+                  className="icon-link"
+                  aria-label="Мои заказы"
+                  onClick={closeMobilePanels}
+                >
+                  <Package size={20} />
+
+                  <span className="icon-link-label">
+                    Мои заказы
+                  </span>
+
+                  {ordersCount > 0 && (
+                    <span className="cart-badge">
+                      {formatCount(ordersCount)}
+                    </span>
+                  )}
+                </Link>
+              </>
+            )}
+
+            {isAuthenticated ? (
+              <LogoutButton />
+            ) : (
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setAuthOpen(true);
+                  setMenuOpen(false);
+                }}
+              >
+                Войти
+              </button>
+            )}
+          </nav>
+        </div>
+
+        {authOpen && !isAuthenticated && (
+          <div
+            className="auth-modal-overlay"
+            onClick={() =>
+              setAuthOpen(false)
+            }
+          >
+            <div
+              className="auth-modal"
+              onClick={(e) =>
+                e.stopPropagation()
+              }
+            >
+              <button
+                type="button"
+                className="auth-modal-close"
+                onClick={() =>
+                  setAuthOpen(false)
+                }
+                aria-label="Закрыть"
+              >
+                ×
+              </button>
+
+              <AuthForm
+                onClose={() =>
+                  setAuthOpen(false)
+                }
+              />
+            </div>
+          </div>
+        )}
+      </header>
+
+      {categoryOpen && (
+        <div
+          className="mobile-category-panel"
+          role="dialog"
+          aria-label="Категории"
+        >
+          <div className="mobile-category-header">
+            <span>Категории</span>
+
+            <button
+              type="button"
+              className="mobile-category-close"
+              onClick={() =>
+                setCategoryOpen(false)
+              }
+              aria-label="Закрыть категории"
+            >
+              <X size={22} />
+            </button>
+          </div>
+
           <div className="mobile-category-content">
             <CategoryList
               categories={categories}
@@ -204,23 +269,34 @@ function Header({
               onSelect={handleCategorySelect}
             />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      <nav className="mobile-bottom-nav">
+      <nav
+        className={`mobile-bottom-nav ${
+          isAuthenticated
+            ? 'mobile-bottom-nav-auth'
+            : 'mobile-bottom-nav-guest'
+        }`}
+        aria-label="Мобильная навигация"
+      >
         <button
           type="button"
           className={`mobile-nav-item ${
-            categoriesOpen ? 'active' : ''
+            categoryOpen ? 'active' : ''
           }`}
-          onClick={() =>
-            setCategoriesOpen(
-              (prev) => !prev
-            )
-          }
+          onClick={() => {
+            setCategoryOpen(
+              (value) => !value
+            );
+            setMenuOpen(false);
+          }}
           aria-label="Категории"
+          aria-expanded={categoryOpen}
         >
-          <Grid2X2 size={22} />
+          <span className="mobile-nav-icon">
+            <Grid3X3 size={21} />
+          </span>
 
           <span>Категории</span>
         </button>
@@ -228,10 +304,11 @@ function Header({
         <Link
           to="/cart"
           className="mobile-nav-item"
+          onClick={closeMobilePanels}
           aria-label="Корзина"
         >
           <span className="mobile-nav-icon">
-            <ShoppingCart size={22} />
+            <ShoppingCart size={21} />
 
             {cartCount > 0 && (
               <span className="mobile-nav-badge">
@@ -246,10 +323,11 @@ function Header({
         <Link
           to="/wishlist"
           className="mobile-nav-item"
+          onClick={closeMobilePanels}
           aria-label="Избранное"
         >
           <span className="mobile-nav-icon">
-            <Heart size={22} />
+            <Heart size={21} />
 
             {wishlistCount > 0 && (
               <span className="mobile-nav-badge">
@@ -265,9 +343,12 @@ function Header({
           <Link
             to="/profile"
             className="mobile-nav-item"
+            onClick={closeMobilePanels}
             aria-label="Профиль"
           >
-            <User size={22} />
+            <span className="mobile-nav-icon">
+              <User size={21} />
+            </span>
 
             <span>Профиль</span>
           </Link>
@@ -275,60 +356,44 @@ function Header({
           <button
             type="button"
             className="mobile-nav-item"
-            onClick={handleProfileClick}
+            onClick={() => {
+              closeMobilePanels();
+              setAuthOpen(true);
+            }}
             aria-label="Профиль"
           >
-            <User size={22} />
+            <span className="mobile-nav-icon">
+              <User size={21} />
+            </span>
 
             <span>Профиль</span>
           </button>
         )}
 
-        <button
-          type="button"
-          className={`mobile-nav-item ${
-            chatOpen ? 'active' : ''
-          }`}
-          onClick={onChatOpen}
-          aria-label="Чат"
-        >
-          <span className="mobile-nav-icon">
-            <MessageCircle size={22} />
-          </span>
-
-          <span>Чат</span>
-        </button>
-      </nav>
-
-      {authOpen && !isAuthenticated && (
-        <div
-          className="auth-modal-overlay"
-          onClick={() => setAuthOpen(false)}
-        >
-          <div
-            className="auth-modal"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
+        {isAuthenticated && (
+          <button
+            type="button"
+            className="mobile-nav-item"
+            onClick={handleMobileChatOpen}
+            aria-label="Чат"
           >
-            <button
-              className="auth-modal-close"
-              onClick={() =>
-                setAuthOpen(false)
-              }
-            >
-              ×
-            </button>
+            <span className="mobile-nav-icon">
+              <MessageCircle size={21} />
 
-            <AuthForm
-              onClose={() =>
-                setAuthOpen(false)
-              }
-            />
-          </div>
-        </div>
-      )}
-    </header>
+              {unreadChatCount > 0 && (
+                <span className="mobile-nav-badge">
+                  {formatCount(
+                    unreadChatCount
+                  )}
+                </span>
+              )}
+            </span>
+
+            <span>Чат</span>
+          </button>
+        )}
+      </nav>
+    </>
   );
 }
 

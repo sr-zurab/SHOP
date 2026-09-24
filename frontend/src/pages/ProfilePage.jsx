@@ -7,6 +7,7 @@ import {
   changePassword,
   clearPasswordChangeSuccess,
 } from '../features/profile/profileSlice';
+import LogoutButton from '../components/LogoutButton';
 
 function ProfilePage() {
   const dispatch = useDispatch();
@@ -93,9 +94,7 @@ function ProfilePage() {
           На сайте с{' '}
           {new Date(
             profile.date_joined
-          ).toLocaleDateString(
-            'ru-RU'
-          )}
+          ).toLocaleDateString('ru-RU')}
         </p>
 
         <Link
@@ -212,6 +211,12 @@ function ProfilePage() {
             Изменить пароль
           </button>
         </form>
+      </div>
+
+      <div className="profile-section profile-logout-section">
+        <h2>Аккаунт</h2>
+
+        <LogoutButton />
       </div>
     </div>
   );

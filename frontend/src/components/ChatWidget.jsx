@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   fetchChatMessages,
@@ -9,7 +14,11 @@ import {
   clearMessages,
 } from '../features/chat/chatSlice';
 import useChatSocket from '../hooks/useChatSocket';
-import { MessageCircle, X, Send } from 'lucide-react';
+import {
+  MessageCircle,
+  X,
+  Send,
+} from 'lucide-react';
 
 function ChatWidget({
   open,
@@ -48,41 +57,61 @@ function ChatWidget({
   );
 
   useEffect(() => {
+    const handleOpenChat = () => {
+      if (isAuthenticated) {
+        onOpen();
+      }
+    };
+
+    window.addEventListener(
+      'shop:open-chat',
+      handleOpenChat
+    );
+
+    return () => {
+      window.removeEventListener(
+        'shop:open-chat',
+        handleOpenChat
+      );
+    };
+  }, [isAuthenticated, onOpen]);
+
+  useEffect(() => {
     if (
       open &&
       isAuthenticated &&
       !roomId
     ) {
-      dispatch(getWsToken()).then(
-        (result) => {
-          if (
-            getWsToken.fulfilled.match(
-              result
+      dispatch(
+        getWsToken()
+      ).then((result) => {
+        if (
+          getWsToken.fulfilled.match(
+            result
+          )
+        ) {
+          const newRoomId =
+            result.payload.room_id;
+
+          setWsToken(
+            result.payload.ws_token
+          );
+
+          dispatch(
+            setRoomId(newRoomId)
+          );
+
+          dispatch(
+            markChatRead(newRoomId)
+          );
+
+          dispatch(
+            fetchChatMessages(
+              newRoomId
             )
-          ) {
-            const newRoomId =
-              result.payload.room_id;
-
-            setWsToken(
-              result.payload.ws_token
-            );
-
-            dispatch(
-              setRoomId(newRoomId)
-            );
-
-            dispatch(
-              markChatRead(newRoomId)
-            );
-
-            dispatch(
-              fetchChatMessages(
-                newRoomId
-              )
-            );
-          }
+          );
         }
-      );
+      });
     }
   }, [
     open,
@@ -133,7 +162,11 @@ function ChatWidget({
   }
 
   return (
-    <div className="chat-widget">
+    <div
+      className={`chat-widget ${
+        open ? 'chat-widget-open' : ''
+      }`}
+    >
       {open ? (
         <div className="chat-widget-panel">
           <div className="chat-widget-header">
