@@ -55,6 +55,9 @@ function ManagerProductsPage() {
   const [attributes, setAttributes] =
     useState([]);
 
+  const [variants, setVariants] =
+    useState([]);
+
   const [imageFile, setImageFile] =
     useState(null);
 
@@ -184,6 +187,7 @@ function ManagerProductsPage() {
     });
 
     setAttributes([]);
+    setVariants([]);
     setImageFile(null);
     setGalleryFiles([]);
     setEditingProduct(null);
@@ -201,11 +205,36 @@ function ManagerProductsPage() {
       stock: product.stock,
       category:
         product.category?.id || '',
-      available: product.in_stock,
+      available:
+        product.available ?? true,
     });
 
     setAttributes(
-      product.attributes || []
+      (product.attributes || []).map(
+        (attribute) => ({
+          id: attribute.id,
+          name: attribute.name || '',
+          value: attribute.value || '',
+          available:
+            attribute.available ?? true,
+        })
+      )
+    );
+
+    setVariants(
+      (product.variants || []).map(
+        (variant) => ({
+          id: variant.id,
+          attributes:
+            variant.attributes || {},
+          price:
+            variant.price ?? '',
+          stock:
+            variant.stock ?? 0,
+          available:
+            variant.available ?? true,
+        })
+      )
     );
   };
 
@@ -261,9 +290,58 @@ function ManagerProductsPage() {
       );
     });
 
+    const cleanAttributes =
+      attributes
+        .filter(
+          (attribute) =>
+            attribute.name?.trim() &&
+            attribute.value?.trim()
+        )
+        .map((attribute) => ({
+          ...(attribute.id
+            ? { id: attribute.id }
+            : {}),
+          name:
+            attribute.name.trim(),
+          value:
+            attribute.value.trim(),
+          available:
+            attribute.available !== false,
+        }));
+
+    const cleanVariants =
+      variants
+        .filter(
+          (variant) =>
+            variant.attributes &&
+            Object.keys(
+              variant.attributes
+            ).length > 0
+        )
+        .map((variant) => ({
+          ...(variant.id
+            ? { id: variant.id }
+            : {}),
+          attributes:
+            variant.attributes || {},
+          price:
+            variant.price === ''
+              ? '0'
+              : variant.price,
+          stock:
+            Number(variant.stock) || 0,
+          available:
+            variant.available !== false,
+        }));
+
     formData.append(
       'attributes',
-      JSON.stringify(attributes)
+      JSON.stringify(cleanAttributes)
+    );
+
+    formData.append(
+      'variants',
+      JSON.stringify(cleanVariants)
     );
 
     return formData;
@@ -407,6 +485,10 @@ function ManagerProductsPage() {
           attributes={attributes}
           setAttributes={
             setAttributes
+          }
+          variants={variants}
+          setVariants={
+            setVariants
           }
           imageFile={imageFile}
           setImageFile={

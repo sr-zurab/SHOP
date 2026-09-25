@@ -151,10 +151,15 @@ const cartSlice = createSlice({
         available,
         has_attributes,
         attributes = [],
+        variants = [],
       } = action.payload;
 
       const productAttributes = Array.isArray(attributes)
         ? attributes
+        : [];
+
+      const productVariants = Array.isArray(variants)
+        ? variants
         : [];
 
       state.data.items.forEach((item) => {
@@ -162,9 +167,13 @@ const cartSlice = createSlice({
           return;
         }
 
+        const product = item.product;
+
+        product.available = available;
+        product.has_attributes = has_attributes;
+
         if (!has_attributes) {
-          item.product.stock = stock;
-          item.product.available = available;
+          product.stock = stock;
 
           if (item.attribute_stock !== undefined) {
             item.attribute_stock = stock;
@@ -173,99 +182,71 @@ const cartSlice = createSlice({
           return;
         }
 
-        const selectedAttributes =
-          item.selected_attributes || {};
+        product.stock = stock;
 
-        const selectedEntries = Object.entries(
-          selectedAttributes
+        if (Array.isArray(product.attributes)) {
+          product.attributes = productAttributes.map(
+            (attribute) => ({
+              id: attribute.id,
+              name: attribute.name,
+              value: attribute.value,
+              available: attribute.available,
+            })
+          );
+        }
+
+        product.variants = productVariants.map(
+          (variant) => ({
+            id: variant.id,
+            attributes: variant.attributes || {},
+            price: variant.price,
+            stock: variant.stock,
+            available: variant.available,
+            in_stock: variant.in_stock,
+          })
         );
-
-        if (selectedEntries.length === 0) {
-          return;
-        }
-
-        const matchedAttributes =
-          selectedEntries.map(([name, value]) => {
-            return productAttributes.find(
-              (attribute) =>
-                attribute.name === name &&
-                attribute.value === value
-            );
-          });
-
-        if (
-          matchedAttributes.some(
-            (attribute) => !attribute
-          )
-        ) {
-          return;
-        }
-
-        const availableMatchedAttributes =
-          matchedAttributes.filter(
-            (attribute) =>
-              attribute.available !== false
-          );
-
-        if (
-          availableMatchedAttributes.length !==
-          matchedAttributes.length
-        ) {
-          item.attribute_stock = 0;
-          return;
-        }
-
-        item.attribute_stock =
-          Math.min(
-            ...matchedAttributes.map(
-              (attribute) => attribute.stock
-            )
-          );
-
-        const product =
-          item.product;
-
-        product.available = available;
-        product.has_attributes = true;
-
-        if (
-          Array.isArray(product.attributes)
-        ) {
-          product.attributes =
-            productAttributes.map(
-              (attribute) => ({
-                id: attribute.id,
-                name: attribute.name,
-                value: attribute.value,
-                stock: attribute.stock,
-                available: attribute.available,
-                in_stock: attribute.in_stock,
-              })
-            );
-        }
 
         const groupedAttributes = {};
 
         productAttributes.forEach(
           (attribute) => {
-            if (
-              !groupedAttributes[
-                attribute.name
-              ]
-            ) {
-              groupedAttributes[
-                attribute.name
-              ] = [];
+            if (!groupedAttributes[attribute.name]) {
+              groupedAttributes[attribute.name] = [];
             }
 
-            groupedAttributes[
-              attribute.name
-            ].push({
+            const matchingVariants =
+              productVariants.filter(
+                (variant) =>
+                  variant.attributes &&
+                  variant.attributes[attribute.name] ===
+                    attribute.value
+              );
+
+            const availableVariants =
+              matchingVariants.filter(
+                (variant) =>
+                  variant.available !== false &&
+                  Number(variant.stock) > 0
+              );
+
+            const maxStock =
+              matchingVariants.reduce(
+                (max, variant) =>
+                  Math.max(
+                    max,
+                    Number(variant.stock) || 0
+                  ),
+                0
+              );
+
+            groupedAttributes[attribute.name].push({
               id: attribute.id,
               value: attribute.value,
-              stock: attribute.stock,
+              stock: maxStock,
               available: attribute.available,
-              in_stock: attribute.in_stock,
+              in_stock:
+                attribute.available !== false &&
+                availableVariants.length > 0,
             });
           }
         );
@@ -273,7 +254,65 @@ const cartSlice = createSlice({
         product.grouped_attributes =
           groupedAttributes;
 
-        product.stock = stock;
+        if (item.variant !== null && item.variant !== undefined) {
+          const variantId =
+            typeof item.variant === 'object'
+              ? item.variant.id
+              : item.variant;
+
+          const matchingVariant =
+            productVariants.find(
+              (variant) =>
+                Number(variant.id) === Number(variantId)
+            );
+
+          if (matchingVariant) {
+            item.attribute_stock =
+              Number(matchingVariant.stock) || 0;
+
+            item.variant = matchingVariant.id;
+          } else {
+            item.attribute_stock = 0;
+          }
+
+          return;
+        }
+
+        const selectedAttributes =
+          item.selected_attributes || {};
+
+        const selectedEntries =
+          Object.entries(selectedAttributes);
+
+        if (selectedEntries.length === 0) {
+          item.attribute_stock = 0;
+          return;
+        }
+
+        const matchingVariant =
+          productVariants.find((variant) => {
+            const variantAttributes =
+              variant.attributes || {};
+
+            const variantEntries =
+              Object.entries(variantAttributes);
+
+            if (
+              variantEntries.length !==
+              selectedEntries.length
+            ) {
+              return false;
+            }
+
+            return selectedEntries.every(
+              ([name, value]) =>
+                variantAttributes[name] === value
+            );
+          });
+
+        item.attribute_stock = matchingVariant
+          ? Number(matchingVariant.stock) || 0
+          : 0;
       });
     },
   },

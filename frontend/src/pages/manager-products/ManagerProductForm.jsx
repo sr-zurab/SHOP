@@ -6,6 +6,8 @@ function ManagerProductForm({
   setForm,
   attributes,
   setAttributes,
+  variants,
+  setVariants,
   imageFile,
   setImageFile,
   galleryFiles,
@@ -14,16 +16,25 @@ function ManagerProductForm({
   onSubmit,
   onReset,
 }) {
-  const updateFormField = (field, value) => {
+  const updateFormField = (
+    field,
+    value
+  ) => {
     setForm((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  const updateAttribute = (index, field, value) => {
+  const updateAttribute = (
+    index,
+    field,
+    value
+  ) => {
     setAttributes((prev) => {
-      const newAttributes = [...prev];
+      const newAttributes = [
+        ...prev,
+      ];
 
       newAttributes[index] = {
         ...newAttributes[index],
@@ -34,7 +45,9 @@ function ManagerProductForm({
     });
   };
 
-  const removeAttribute = (index) => {
+  const removeAttribute = (
+    index
+  ) => {
     setAttributes((prev) =>
       prev.filter(
         (_, attributeIndex) =>
@@ -49,11 +62,173 @@ function ManagerProductForm({
       {
         name: '',
         value: '',
-        stock: 0,
         available: true,
       },
     ]);
   };
+
+  const updateVariant = (
+    index,
+    field,
+    value
+  ) => {
+    setVariants((prev) => {
+      const newVariants = [
+        ...prev,
+      ];
+
+      newVariants[index] = {
+        ...newVariants[index],
+        [field]: value,
+      };
+
+      return newVariants;
+    });
+  };
+
+  const removeVariant = (
+    index
+  ) => {
+    setVariants((prev) =>
+      prev.filter(
+        (_, variantIndex) =>
+          variantIndex !== index
+      )
+    );
+  };
+
+  const getAttributeGroups =
+    () => {
+      const groups = {};
+
+      attributes.forEach(
+        (attribute) => {
+          const name =
+            attribute.name?.trim();
+          const value =
+            attribute.value?.trim();
+
+          if (!name || !value) {
+            return;
+          }
+
+          if (!groups[name]) {
+            groups[name] = [];
+          }
+
+          if (
+            !groups[name].some(
+              (item) =>
+                item.value === value
+            )
+          ) {
+            groups[name].push({
+              value,
+              available:
+                attribute.available !==
+                false,
+            });
+          }
+        }
+      );
+
+      return groups;
+    };
+
+  const generateCombinations =
+    () => {
+      const groups =
+        getAttributeGroups();
+
+      const groupNames =
+        Object.keys(groups);
+
+      if (
+        groupNames.length === 0
+      ) {
+        setVariants([]);
+        return;
+      }
+
+      const combinations = [
+        {},
+      ];
+
+      groupNames.forEach(
+        (name) => {
+          const values =
+            groups[name];
+
+          const nextCombinations =
+            [];
+
+          combinations.forEach(
+            (combination) => {
+              values.forEach(
+                (item) => {
+                  nextCombinations.push(
+                    {
+                      ...combination,
+                      [name]:
+                        item.value,
+                    }
+                  );
+                }
+              );
+            }
+          );
+
+          combinations.splice(
+            0,
+            combinations.length,
+            ...nextCombinations
+          );
+        }
+      );
+
+      setVariants((previous) => {
+        return combinations.map(
+          (combination) => {
+            const existing =
+              previous.find(
+                (variant) =>
+                  JSON.stringify(
+                    variant.attributes
+                  ) ===
+                  JSON.stringify(
+                    combination
+                  )
+              );
+
+            return {
+              ...(existing?.id
+                ? {
+                    id: existing.id,
+                  }
+                : {}),
+              attributes:
+                combination,
+              price:
+                existing?.price ??
+                form.price ??
+                '',
+              stock:
+                existing?.stock ??
+                0,
+              available:
+                existing?.available ??
+                true,
+            };
+          }
+        );
+      });
+    };
+
+  const attributeGroups =
+    getAttributeGroups();
+
+  const hasVariants =
+    variants.length > 0;
 
   return (
     <form
@@ -107,7 +282,7 @@ function ManagerProductForm({
         <input
           type="number"
           step="0.01"
-          placeholder="Цена"
+          placeholder="Цена товара"
           value={form.price}
           onChange={(e) =>
             updateFormField(
@@ -120,7 +295,8 @@ function ManagerProductForm({
 
         <input
           type="number"
-          placeholder="Остаток"
+          min="0"
+          placeholder="Остаток товара"
           value={form.stock}
           onChange={(e) =>
             updateFormField(
@@ -153,7 +329,9 @@ function ManagerProductForm({
                 key={category.id}
                 value={category.id}
               >
-                {`${'— '.repeat(category.level)}${category.name}`}
+                {`${'— '.repeat(
+                  category.level
+                )}${category.name}`}
               </option>
             )
           )}
@@ -182,7 +360,8 @@ function ManagerProductForm({
           accept="image/*"
           onChange={(e) =>
             setImageFile(
-              e.target.files?.[0] || null
+              e.target.files?.[0] ||
+                null
             )
           }
         />
@@ -207,19 +386,30 @@ function ManagerProductForm({
 
       <div className="manager-attributes-section">
         <h3>
-          Атрибуты (цвет, размер и т.д.)
+          Параметры товара
         </h3>
+
+        <p className="manager-attributes-help">
+          Здесь задаются доступные значения
+          параметров. Остаток и цена задаются
+          отдельно для каждого варианта ниже.
+        </p>
 
         {attributes.map(
           (attr, index) => (
             <div
-              key={index}
+              key={
+                attr.id ??
+                `attribute-${index}`
+              }
               className="manager-attribute-row"
             >
               <input
                 type="text"
-                placeholder="Название (напр. Цвет)"
-                value={attr.name}
+                placeholder="Название (например, Диагональ)"
+                value={
+                  attr.name
+                }
                 onChange={(e) =>
                   updateAttribute(
                     index,
@@ -231,8 +421,10 @@ function ManagerProductForm({
 
               <input
                 type="text"
-                placeholder="Значение (напр. Красный)"
-                value={attr.value}
+                placeholder="Значение (например, 60'')"
+                value={
+                  attr.value
+                }
                 onChange={(e) =>
                   updateAttribute(
                     index,
@@ -242,27 +434,13 @@ function ManagerProductForm({
                 }
               />
 
-              <input
-                type="number"
-                min="0"
-                placeholder="Остаток"
-                value={attr.stock}
-                onChange={(e) =>
-                  updateAttribute(
-                    index,
-                    'stock',
-                    parseInt(
-                      e.target.value,
-                      10
-                    ) || 0
-                  )
-                }
-              />
-
               <label className="checkbox-label">
                 <input
                   type="checkbox"
-                  checked={attr.available}
+                  checked={
+                    attr.available !==
+                    false
+                  }
                   onChange={(e) =>
                     updateAttribute(
                       index,
@@ -271,16 +449,18 @@ function ManagerProductForm({
                     )
                   }
                 />
-                В наличии
+                Доступно
               </label>
 
               <button
                 type="button"
                 className="btn btn-remove"
                 onClick={() =>
-                  removeAttribute(index)
+                  removeAttribute(
+                    index
+                  )
                 }
-                aria-label="Удалить атрибут"
+                aria-label="Удалить параметр"
               >
                 <X size={16} />
               </button>
@@ -288,20 +468,158 @@ function ManagerProductForm({
           )
         )}
 
-        {attributes.length === 0 && (
+        {attributes.length ===
+          0 && (
           <p className="empty-text manager-attributes-empty">
-            Атрибутов нет
+            Параметров нет
           </p>
         )}
 
-        <button
-          type="button"
-          className="btn btn-outline"
-          onClick={addAttribute}
-        >
-          <Plus size={16} />
-          Добавить атрибут
-        </button>
+        <div className="manager-attributes-actions">
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={
+              addAttribute
+            }
+          >
+            <Plus size={16} />
+            Добавить параметр
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={
+              generateCombinations
+            }
+            disabled={
+              Object.keys(
+                attributeGroups
+              ).length === 0
+            }
+          >
+            <Plus size={16} />
+            Сформировать варианты
+          </button>
+        </div>
+      </div>
+
+      <div className="manager-attributes-section">
+        <h3>
+          Варианты товара
+        </h3>
+
+        <p className="manager-attributes-help">
+          Каждый вариант — конкретная комбинация
+          параметров со своей ценой и остатком.
+        </p>
+
+        {!hasVariants && (
+          <p className="empty-text manager-attributes-empty">
+            Вариантов нет. Добавьте параметры и
+            нажмите «Сформировать варианты».
+          </p>
+        )}
+
+        {variants.map(
+          (variant, index) => {
+            const attributeText =
+              Object.entries(
+                variant.attributes ||
+                  {}
+              )
+                .map(
+                  ([name, value]) =>
+                    `${name}: ${value}`
+                )
+                .join(', ');
+
+            return (
+              <div
+                key={
+                  variant.id ??
+                  `variant-${index}`
+                }
+                className="manager-variant-row"
+              >
+                <div className="manager-variant-attributes">
+                  {attributeText ||
+                    'Без параметров'}
+                </div>
+
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Цена"
+                  value={
+                    variant.price
+                  }
+                  onChange={(e) =>
+                    updateVariant(
+                      index,
+                      'price',
+                      e.target.value
+                    )
+                  }
+                  required
+                />
+
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Остаток"
+                  value={
+                    variant.stock
+                  }
+                  onChange={(e) =>
+                    updateVariant(
+                      index,
+                      'stock',
+                      parseInt(
+                        e.target.value,
+                        10
+                      ) || 0
+                    )
+                  }
+                  required
+                />
+
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={
+                      variant.available !==
+                      false
+                    }
+                    onChange={(e) =>
+                      updateVariant(
+                        index,
+                        'available',
+                        e.target.checked
+                      )
+                    }
+                  />
+                  В продаже
+                </label>
+
+                <button
+                  type="button"
+                  className="btn btn-remove"
+                  onClick={() =>
+                    removeVariant(
+                      index
+                    )
+                  }
+                  aria-label="Удалить вариант"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            );
+          }
+        )}
       </div>
 
       <div className="form-actions">

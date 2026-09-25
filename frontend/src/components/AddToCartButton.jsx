@@ -45,6 +45,25 @@ function AddToCartButton({
     attributeGroups || {}
   );
 
+  const productVariants = Array.isArray(
+    product?.variants
+  )
+    ? product.variants
+    : [];
+
+  const hasAvailableVariant =
+    hasAttributes &&
+    productVariants.some(
+      (variant) =>
+        variant.available !== false &&
+        Number(variant.stock) > 0
+    );
+
+  const effectiveDisabled =
+    hasAttributes
+      ? !hasAvailableVariant
+      : disabled;
+
   const cartItemsForProduct = (
     cart?.items || []
   ).filter(
@@ -60,8 +79,151 @@ function AddToCartButton({
         ).length > 0
     );
 
+  const normalizeAttributes = (
+    attributes = {}
+  ) => {
+    const normalized = {};
+
+    Object.entries(attributes).forEach(
+      ([name, value]) => {
+        if (
+          name === undefined ||
+          name === null ||
+          value === undefined ||
+          value === null
+        ) {
+          return;
+        }
+
+        normalized[
+          String(name).trim()
+        ] = String(value).trim();
+      }
+    );
+
+    return normalized;
+  };
+
+  const attributesMatch = (
+    variantAttributes,
+    selectedAttributes
+  ) => {
+    const variant =
+      normalizeAttributes(
+        variantAttributes
+      );
+
+    const selected =
+      normalizeAttributes(
+        selectedAttributes
+      );
+
+    return Object.entries(
+      selected
+    ).every(
+      ([name, value]) =>
+        variant[name] === value
+    );
+  };
+
+  const findVariant = (
+    attributes
+  ) => {
+    const normalized =
+      normalizeAttributes(
+        attributes
+      );
+
+    return (
+      productVariants.find(
+        (variant) => {
+          const variantAttributes =
+            normalizeAttributes(
+              variant.attributes
+            );
+
+          const variantKeys =
+            Object.keys(
+              variantAttributes
+            );
+
+          const selectedKeys =
+            Object.keys(
+              normalized
+            );
+
+          if (
+            variantKeys.length !==
+            selectedKeys.length
+          ) {
+            return false;
+          }
+
+          return Object.entries(
+            normalized
+          ).every(
+            ([name, value]) =>
+              variantAttributes[
+                name
+              ] === value
+          );
+        }
+      ) || null
+    );
+  };
+
+  const getMatchingVariants = (
+    attributes
+  ) => {
+    return productVariants.filter(
+      (variant) =>
+        attributesMatch(
+          variant.attributes,
+          attributes
+        )
+    );
+  };
+
+  const isOptionAvailable = (
+    name,
+    value
+  ) => {
+    const candidateSelection = {
+      ...selected,
+      [name]: value,
+    };
+
+    const matchingVariants =
+      getMatchingVariants(
+        candidateSelection
+      );
+
+    return matchingVariants.some(
+      (variant) =>
+        variant.available !== false &&
+        Number(variant.stock) > 0
+    );
+  };
+
+  const isSelectionComplete =
+    attributeNames.length > 0 &&
+    attributeNames.every(
+      (name) =>
+        selected[name] !== undefined
+    );
+
+  const selectedVariant =
+    isSelectionComplete
+      ? findVariant(selected)
+      : null;
+
+  const selectedVariantInStock =
+    selectedVariant !== null &&
+    selectedVariant.available !== false &&
+    Number(selectedVariant.stock) > 0;
+
   const handleAdd = async () => {
-    if (disabled) {
+    if (effectiveDisabled) {
       return;
     }
 
@@ -104,17 +266,11 @@ function AddToCartButton({
     }));
   };
 
-  const isSelectionComplete =
-    attributeNames.length > 0 &&
-    attributeNames.every(
-      (name) =>
-        selected[name] !== undefined
-    );
-
   const handleConfirmAdd = async () => {
     if (
       !isSelectionComplete ||
-      disabled
+      !selectedVariantInStock ||
+      effectiveDisabled
     ) {
       return;
     }
@@ -297,7 +453,10 @@ function AddToCartButton({
           <div
             className="attribute-modal-overlay"
             onClick={() => {
-              if (!isAdding && !loadingItemId) {
+              if (
+                !isAdding &&
+                !loadingItemId
+              ) {
                 setShowModal(false);
               }
             }}
@@ -435,20 +594,20 @@ function AddToCartButton({
         className="btn btn-primary add-to-cart-btn"
         onClick={handleAdd}
         disabled={
-          disabled ||
+          effectiveDisabled ||
           isAdding
         }
       >
         {isAdding
           ? 'Добавляем...'
-          : disabled
+          : effectiveDisabled
             ? 'Нет в наличии'
             : hasVariantsInCart
               ? `В корзине: ${totalQuantity} шт.`
               : 'В корзину'}
       </button>
 
-      {showModal && !disabled && (
+      {showModal && !effectiveDisabled && (
         <div
           className="attribute-modal-overlay"
           onClick={() => {
@@ -498,8 +657,10 @@ function AddToCartButton({
                         (option) => {
                           const optionDisabled =
                             !option.available ||
-                            !option.in_stock ||
-                            option.stock <= 0;
+                            !isOptionAvailable(
+                              name,
+                              option.value
+                            );
 
                           const isSelected =
                             selected[name] ===
@@ -560,6 +721,7 @@ function AddToCartButton({
                 }
                 disabled={
                   !isSelectionComplete ||
+                  !selectedVariantInStock ||
                   isAdding
                 }
               >

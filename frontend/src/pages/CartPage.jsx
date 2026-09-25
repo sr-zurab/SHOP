@@ -30,34 +30,113 @@ function CartPage() {
     dispatch(fetchCart());
   }, [dispatch]);
 
+  const getVariant = (item) => {
+    if (!item?.variant) {
+      return null;
+    }
+
+    const variantId =
+      typeof item.variant === 'object'
+        ? item.variant.id
+        : item.variant;
+
+    const variants = Array.isArray(
+      item.product?.variants
+    )
+      ? item.product.variants
+      : [];
+
+    return (
+      variants.find(
+        (variant) =>
+          variant.id === variantId
+      ) || null
+    );
+  };
+
+  const getMaxStock = (item) => {
+    if (
+      item.attribute_stock !== undefined &&
+      item.attribute_stock !== null
+    ) {
+      return Number(item.attribute_stock);
+    }
+
+    return Number(
+      item.product?.stock || 0
+    );
+  };
+
+  const getUnitPrice = (item) => {
+    const variant = getVariant(item);
+
+    if (variant) {
+      return Number(variant.price || 0);
+    }
+
+    if (
+      item.variant &&
+      item.quantity > 0 &&
+      item.total_price !== undefined
+    ) {
+      return (
+        Number(item.total_price || 0) /
+        item.quantity
+      );
+    }
+
+    return Number(
+      item.product?.price || 0
+    );
+  };
+
+  const isItemOutOfStock = (item) => {
+    if (
+      item.product.available === false
+    ) {
+      return true;
+    }
+
+    const variant = getVariant(item);
+
+    if (item.variant && !variant) {
+      return true;
+    }
+
+    if (
+      variant &&
+      variant.available === false
+    ) {
+      return true;
+    }
+
+    return getMaxStock(item) <= 0;
+  };
+
   useEffect(() => {
     if (!cart?.items) {
       return;
     }
 
     const availableIds = cart.items
-      .filter((item) => {
-        const maxStock =
-          item.attribute_stock !== undefined
-            ? item.attribute_stock
-            : item.product.stock;
-
-        return (
-          item.product.available !== false &&
-          maxStock > 0
-        );
-      })
+      .filter(
+        (item) =>
+          !isItemOutOfStock(item)
+      )
       .map((item) => item.id);
 
-    setSelectedItemIds((currentIds) => {
-      if (currentIds.length === 0) {
-        return availableIds;
-      }
+    setSelectedItemIds(
+      (currentIds) => {
+        if (currentIds.length === 0) {
+          return availableIds;
+        }
 
-      return currentIds.filter((id) =>
-        availableIds.includes(id)
-      );
-    });
+        return currentIds.filter(
+          (id) =>
+            availableIds.includes(id)
+        );
+      }
+    );
   }, [cart?.items]);
 
   useEffect(() => {
@@ -66,42 +145,47 @@ function CartPage() {
       return;
     }
 
-    dispatch(calculateDiscounts(selectedItemIds));
-  }, [dispatch, selectedItemIds]);
+    dispatch(
+      calculateDiscounts(selectedItemIds)
+    );
+  }, [
+    dispatch,
+    selectedItemIds,
+  ]);
 
   const formatAttributes = (attrs) => {
-    if (!attrs || Object.keys(attrs).length === 0) {
+    if (
+      !attrs ||
+      Object.keys(attrs).length === 0
+    ) {
       return null;
     }
 
     return Object.entries(attrs)
-      .map(([name, value]) => `${name}: ${value}`)
+      .map(
+        ([name, value]) =>
+          `${name}: ${value}`
+      )
       .join(', ');
   };
 
-  const getMaxStock = (item) => {
-    if (item.attribute_stock !== undefined) {
-      return item.attribute_stock;
-    }
-
-    return item.product.stock;
-  };
-
-  const isItemOutOfStock = (item) => {
+  if (
+    loading &&
+    cart.items.length === 0
+  ) {
     return (
-      item.product.available === false ||
-      getMaxStock(item) <= 0
+      <p className="loading-text">
+        Загрузка...
+      </p>
     );
-  };
-
-  if (loading && cart.items.length === 0) {
-    return <p className="loading-text">Загрузка...</p>;
   }
 
   if (cart.items.length === 0) {
     return (
       <div className="cart-page">
-        <p className="empty-text">Корзина пуста</p>
+        <p className="empty-text">
+          Корзина пуста
+        </p>
 
         <Link
           to="/"
@@ -113,29 +197,42 @@ function CartPage() {
     );
   }
 
-  const sortedCartItems = [...cart.items].sort(
-    (a, b) => a.id - b.id
-  );
+  const sortedCartItems = [
+    ...cart.items,
+  ].sort((a, b) => a.id - b.id);
 
-  const availableItems = sortedCartItems.filter(
-    (item) => !isItemOutOfStock(item)
-  );
+  const availableItems =
+    sortedCartItems.filter(
+      (item) =>
+        !isItemOutOfStock(item)
+    );
 
   const allAvailableSelected =
     availableItems.length > 0 &&
-    availableItems.every((item) =>
-      selectedItemIds.includes(item.id)
+    availableItems.every(
+      (item) =>
+        selectedItemIds.includes(
+          item.id
+        )
     );
 
-  const selectedItems = sortedCartItems.filter((item) =>
-    selectedItemIds.includes(item.id)
-  );
+  const selectedItems =
+    sortedCartItems.filter(
+      (item) =>
+        selectedItemIds.includes(
+          item.id
+        )
+    );
 
-  const selectedSubtotal = selectedItems.reduce(
-    (sum, item) =>
-      sum + Number(item.total_price || 0),
-    0
-  );
+  const selectedSubtotal =
+    selectedItems.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.total_price || 0
+        ),
+      0
+    );
 
   const discountTotal = Number(
     calculation?.discount_total || 0
@@ -151,15 +248,22 @@ function CartPage() {
       return;
     }
 
-    setSelectedItemIds((currentIds) => {
-      if (currentIds.includes(item.id)) {
-        return currentIds.filter(
-          (id) => id !== item.id
-        );
-      }
+    setSelectedItemIds(
+      (currentIds) => {
+        if (
+          currentIds.includes(item.id)
+        ) {
+          return currentIds.filter(
+            (id) => id !== item.id
+          );
+        }
 
-      return [...currentIds, item.id];
-    });
+        return [
+          ...currentIds,
+          item.id,
+        ];
+      }
+    );
   };
 
   const toggleAllAvailable = () => {
@@ -169,12 +273,16 @@ function CartPage() {
     }
 
     setSelectedItemIds(
-      availableItems.map((item) => item.id)
+      availableItems.map(
+        (item) => item.id
+      )
     );
   };
 
   const handleCheckout = () => {
-    if (selectedItemIds.length === 0) {
+    if (
+      selectedItemIds.length === 0
+    ) {
       return;
     }
 
@@ -194,8 +302,12 @@ function CartPage() {
           <label>
             <input
               type="checkbox"
-              checked={allAvailableSelected}
-              onChange={toggleAllAvailable}
+              checked={
+                allAvailableSelected
+              }
+              onChange={
+                toggleAllAvailable
+              }
             />
 
             {allAvailableSelected
@@ -206,106 +318,136 @@ function CartPage() {
       )}
 
       <div className="cart-items">
-        {sortedCartItems.map((item) => {
-          const attrString = formatAttributes(
-            item.selected_attributes
-          );
+        {sortedCartItems.map(
+          (item) => {
+            const attrString =
+              formatAttributes(
+                item.selected_attributes
+              );
 
-          const maxStock = getMaxStock(item);
-          const outOfStock =
-            isItemOutOfStock(item);
+            const maxStock =
+              getMaxStock(item);
 
-          const isSelected =
-            selectedItemIds.includes(item.id);
+            const outOfStock =
+              isItemOutOfStock(item);
 
-          return (
-            <div
-              key={item.id}
-              className={`cart-item ${
-                outOfStock
-                  ? 'out-of-stock'
-                  : ''
-              } ${
-                isSelected
-                  ? 'selected'
-                  : ''
-              }`}
-            >
-              <div className="cart-item-select">
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  disabled={outOfStock}
-                  onChange={() =>
-                    toggleItem(item)
-                  }
-                  aria-label={`Выбрать ${item.product.name}`}
-                />
-              </div>
+            const isSelected =
+              selectedItemIds.includes(
+                item.id
+              );
 
-              <Link
-                to={`/products/${item.product.slug}`}
-                className="cart-item-image"
+            const unitPrice =
+              getUnitPrice(item);
+
+            return (
+              <div
+                key={item.id}
+                className={`cart-item ${
+                  outOfStock
+                    ? 'out-of-stock'
+                    : ''
+                } ${
+                  isSelected
+                    ? 'selected'
+                    : ''
+                }`}
               >
-                {item.product.thumbnail ? (
-                  <img
-                    src={item.product.thumbnail}
-                    alt={item.product.name}
+                <div className="cart-item-select">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    disabled={
+                      outOfStock
+                    }
+                    onChange={() =>
+                      toggleItem(item)
+                    }
+                    aria-label={`Выбрать ${item.product.name}`}
                   />
-                ) : (
-                  <div className="product-card-no-image">
-                    Нет фото
-                  </div>
-                )}
-              </Link>
+                </div>
 
-              <div className="cart-item-info">
                 <Link
                   to={`/products/${item.product.slug}`}
-                  className="cart-item-name"
+                  className="cart-item-image"
                 >
-                  {item.product.name}
+                  {item.product.thumbnail ? (
+                    <img
+                      src={
+                        item.product
+                          .thumbnail
+                      }
+                      alt={
+                        item.product.name
+                      }
+                    />
+                  ) : (
+                    <div className="product-card-no-image">
+                      Нет фото
+                    </div>
+                  )}
                 </Link>
 
-                <p className="cart-item-price">
-                  {item.product.price} ₽
+                <div className="cart-item-info">
+                  <Link
+                    to={`/products/${item.product.slug}`}
+                    className="cart-item-name"
+                  >
+                    {item.product.name}
+                  </Link>
+
+                  <p className="cart-item-price">
+                    {unitPrice.toFixed(2)} ₽
+                  </p>
+
+                  {attrString && (
+                    <p className="cart-item-attributes">
+                      {attrString}
+                    </p>
+                  )}
+
+                  {outOfStock && (
+                    <p className="cart-item-stock-error">
+                      Нет в наличии
+                    </p>
+                  )}
+                </div>
+
+                <CartQuantityControl
+                  productId={
+                    item.product.id
+                  }
+                  quantity={
+                    item.quantity
+                  }
+                  maxStock={
+                    maxStock
+                  }
+                  selectedAttributes={
+                    item.selected_attributes ||
+                    {}
+                  }
+                />
+
+                <p className="cart-item-total">
+                  {Number(
+                    item.total_price || 0
+                  ).toFixed(2)}{' '}
+                  ₽
                 </p>
 
-                {attrString && (
-                  <p className="cart-item-attributes">
-                    {attrString}
-                  </p>
-                )}
-
-                {outOfStock && (
-                  <p className="cart-item-stock-error">
-                    Нет в наличии
-                  </p>
-                )}
+                <RemoveFromCartButton
+                  productId={
+                    item.product.id
+                  }
+                  selectedAttributes={
+                    item.selected_attributes ||
+                    {}
+                  }
+                />
               </div>
-
-              <CartQuantityControl
-                productId={item.product.id}
-                quantity={item.quantity}
-                maxStock={maxStock}
-                selectedAttributes={
-                  item.selected_attributes || {}
-                }
-              />
-
-              <p className="cart-item-total">
-                {item.total_price} ₽
-              </p>
-
-              <RemoveFromCartButton
-                productId={item.product.id}
-                selectedAttributes={
-                  item.selected_attributes || {}
-                }
-              />
-            </div>
-          );
-        })}
+            );
+          }
+        )}
       </div>
 
       <div className="cart-summary">
@@ -324,8 +466,13 @@ function CartPage() {
 
             <strong>
               {calculation
-                ? Number(calculation.subtotal).toFixed(2)
-                : selectedSubtotal.toFixed(2)} ₽
+                ? Number(
+                    calculation.subtotal
+                  ).toFixed(2)
+                : selectedSubtotal.toFixed(
+                    2
+                  )}{' '}
+              ₽
             </strong>
           </div>
 
@@ -334,25 +481,37 @@ function CartPage() {
               <span>Скидка:</span>
 
               <strong>
-                −{discountTotal.toFixed(2)} ₽
+                −
+                {discountTotal.toFixed(
+                  2
+                )}{' '}
+                ₽
               </strong>
             </div>
           )}
 
           <div>
-            <span>К оформлению:</span>
+            <span>
+              К оформлению:
+            </span>
 
             <strong>
-              {checkoutTotal.toFixed(2)} ₽
+              {checkoutTotal.toFixed(
+                2
+              )}{' '}
+              ₽
             </strong>
           </div>
         </div>
 
         <button
           className="btn btn-primary checkout-btn"
-          onClick={handleCheckout}
+          onClick={
+            handleCheckout
+          }
           disabled={
-            selectedItemIds.length === 0 ||
+            selectedItemIds.length ===
+              0 ||
             discountLoading
           }
         >

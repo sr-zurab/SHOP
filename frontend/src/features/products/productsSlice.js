@@ -83,10 +83,14 @@ export const deleteProduct = createAsyncThunk(
   'products/delete',
   async (slug, { rejectWithValue }) => {
     try {
-      const res = await authFetch(`/products/${slug}/`, { method: 'DELETE' });
+      const res = await authFetch(`/products/${slug}/`, {
+        method: 'DELETE',
+      });
+
       if (!res.ok && res.status !== 204) {
         throw new Error('Ошибка удаления товара');
       }
+
       return slug;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -96,6 +100,7 @@ export const deleteProduct = createAsyncThunk(
 
 const productsSlice = createSlice({
   name: 'products',
+
   initialState: {
     list: [],
     count: 0,
@@ -109,6 +114,7 @@ const productsSlice = createSlice({
     loading: false,
     error: null,
   },
+
   reducers: {
     clearCurrentProduct: (state) => {
       state.current = null;
@@ -122,23 +128,16 @@ const productsSlice = createSlice({
         available,
         has_attributes,
         attributes = [],
+        variants = [],
       } = action.payload;
 
-      const groupedAttributes = {};
+      const productAttributes = Array.isArray(attributes)
+        ? attributes
+        : [];
 
-      attributes.forEach((attribute) => {
-        if (!groupedAttributes[attribute.name]) {
-          groupedAttributes[attribute.name] = [];
-        }
-
-        groupedAttributes[attribute.name].push({
-          id: attribute.id,
-          value: attribute.value,
-          stock: attribute.stock,
-          available: attribute.available,
-          in_stock: attribute.in_stock,
-        });
-      });
+      const productVariants = Array.isArray(variants)
+        ? variants
+        : [];
 
       const updateProduct = (product) => {
         if (!product || product.id !== product_id) {
@@ -150,30 +149,110 @@ const productsSlice = createSlice({
         product.available = available;
         product.has_attributes = has_attributes;
 
+        /*
+         * ProductAttribute больше не содержит stock/in_stock.
+         *
+         * Атрибуты здесь остаются только описанием
+         * доступных значений товара.
+         */
         if (Array.isArray(product.attributes)) {
-          product.attributes = attributes.map((attribute) => ({
-            id: attribute.id,
-            name: attribute.name,
-            value: attribute.value,
-            stock: attribute.stock,
-            available: attribute.available,
-            in_stock: attribute.in_stock,
-          }));
+          product.attributes = productAttributes.map(
+            (attribute) => ({
+              id: attribute.id,
+              name: attribute.name,
+              value: attribute.value,
+              available: attribute.available,
+            })
+          );
         }
 
-        product.grouped_attributes = groupedAttributes;
+        /*
+         * Остаток и доступность конкретных комбинаций
+         * теперь находятся в ProductVariant.
+         */
+        if (has_attributes || productVariants.length > 0) {
+          product.variants = productVariants.map(
+            (variant) => ({
+              id: variant.id,
+              attributes: variant.attributes || {},
+              price: variant.price,
+              stock: variant.stock,
+              available: variant.available,
+              in_stock: variant.in_stock,
+            })
+          );
+        } else {
+          product.variants = [];
+        }
+
+        /*
+         * grouped_attributes оставляем для существующего
+         * интерфейса, но теперь формируем его на основании
+         * вариантов, а не ProductAttribute.stock.
+         *
+         * Для каждого значения атрибута:
+         * - available берём из ProductAttribute;
+         * - stock — максимальный остаток подходящих вариантов;
+         * - in_stock — существует ли хотя бы один
+         *   доступный вариант с этим значением.
+         */
+        const groupedAttributes = {};
+
+        productAttributes.forEach((attribute) => {
+          if (!groupedAttributes[attribute.name]) {
+            groupedAttributes[attribute.name] = [];
+          }
+
+          const matchingVariants = productVariants.filter(
+            (variant) =>
+              variant.attributes &&
+              variant.attributes[attribute.name] ===
+                attribute.value
+          );
+
+          const availableVariants =
+            matchingVariants.filter(
+              (variant) =>
+                variant.available !== false &&
+                Number(variant.stock) > 0
+            );
+
+          const maxStock = matchingVariants.reduce(
+            (max, variant) =>
+              Math.max(
+                max,
+                Number(variant.stock) || 0
+              ),
+            0
+          );
+
+          groupedAttributes[attribute.name].push({
+            id: attribute.id,
+            value: attribute.value,
+            stock: maxStock,
+            available: attribute.available,
+            in_stock:
+              attribute.available !== false &&
+              availableVariants.length > 0,
+          });
+        });
+
+        product.grouped_attributes =
+          groupedAttributes;
       };
 
       state.list.forEach(updateProduct);
       updateProduct(state.current);
     },
   },
+
   extraReducers: (builder) => {
     builder
       .addCase(fetchProducts.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.list = action.payload.results;
         state.count = action.payload.count;
@@ -181,38 +260,47 @@ const productsSlice = createSlice({
         state.previous = action.payload.previous;
         state.loading = false;
       })
+
       .addCase(fetchProducts.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+
       .addCase(fetchProductBySlug.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
+
       .addCase(fetchProductBySlug.fulfilled, (state, action) => {
         state.current = action.payload;
         state.loading = false;
       })
+
       .addCase(fetchProductBySlug.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+
       .addCase(fetchManagerProducts.pending, (state) => {
         state.managerLoading = true;
       })
+
       .addCase(fetchManagerProducts.fulfilled, (state, action) => {
         state.managerList = action.payload.results;
         state.managerCount = action.payload.count;
         state.managerNext = action.payload.next;
         state.managerLoading = false;
       })
+
       .addCase(fetchManagerProducts.rejected, (state, action) => {
         state.managerLoading = false;
         state.error = action.payload;
       })
+
       .addCase(createProduct.fulfilled, (state, action) => {
         state.managerList.unshift(action.payload);
       })
+
       .addCase(updateProduct.fulfilled, (state, action) => {
         const index = state.managerList.findIndex(
           (p) => p.slug === action.payload.slug
@@ -222,6 +310,7 @@ const productsSlice = createSlice({
           state.managerList[index] = action.payload;
         }
       })
+
       .addCase(deleteProduct.fulfilled, (state, action) => {
         state.managerList = state.managerList.filter(
           (p) => p.slug !== action.payload

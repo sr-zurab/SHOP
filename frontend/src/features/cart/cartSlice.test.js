@@ -64,7 +64,7 @@ describe('cartSlice', () => {
     ).toBe(2);
   });
 
-  it('обновляет остаток выбранного атрибута', () => {
+  it('обновляет остаток конкретного варианта', () => {
     const initialState = {
       data: {
         items: [
@@ -72,11 +72,13 @@ describe('cartSlice', () => {
             id: 1,
             product: {
               id: 10,
-              stock: 10,
+              stock: 0,
               available: true,
               has_attributes: true,
               attributes: [],
+              variants: [],
             },
+            variant: 101,
             quantity: 2,
             attribute_stock: 5,
             selected_attributes: {
@@ -94,7 +96,7 @@ describe('cartSlice', () => {
       initialState,
       stockUpdated({
         product_id: 10,
-        stock: 8,
+        stock: 0,
         available: true,
         has_attributes: true,
         attributes: [
@@ -102,6 +104,16 @@ describe('cartSlice', () => {
             id: 1,
             name: 'Цвет',
             value: 'Красный',
+            available: true,
+          },
+        ],
+        variants: [
+          {
+            id: 101,
+            attributes: {
+              Цвет: 'Красный',
+            },
+            price: '100.00',
             stock: 3,
             available: true,
             in_stock: true,
@@ -116,14 +128,18 @@ describe('cartSlice', () => {
 
     expect(
       state.data.items[0].product.stock
-    ).toBe(8);
+    ).toBe(0);
 
     expect(
       state.data.items[0].product.available
     ).toBe(true);
+
+    expect(
+      state.data.items[0].product.variants[0].stock
+    ).toBe(3);
   });
 
-  it('устанавливает остаток 0 для недоступного выбранного атрибута', () => {
+  it('устанавливает остаток 0 для недоступного варианта', () => {
     const initialState = {
       data: {
         items: [
@@ -131,10 +147,12 @@ describe('cartSlice', () => {
             id: 1,
             product: {
               id: 10,
-              stock: 10,
+              stock: 0,
               available: true,
               has_attributes: true,
+              variants: [],
             },
+            variant: 101,
             quantity: 2,
             attribute_stock: 5,
             selected_attributes: {
@@ -152,7 +170,7 @@ describe('cartSlice', () => {
       initialState,
       stockUpdated({
         product_id: 10,
-        stock: 8,
+        stock: 0,
         available: true,
         has_attributes: true,
         attributes: [
@@ -160,6 +178,16 @@ describe('cartSlice', () => {
             id: 1,
             name: 'Цвет',
             value: 'Красный',
+            available: false,
+          },
+        ],
+        variants: [
+          {
+            id: 101,
+            attributes: {
+              Цвет: 'Красный',
+            },
+            price: '100.00',
             stock: 0,
             available: false,
             in_stock: false,
@@ -171,6 +199,14 @@ describe('cartSlice', () => {
     expect(
       state.data.items[0].attribute_stock
     ).toBe(0);
+
+    expect(
+      state.data.items[0].product.variants[0].stock
+    ).toBe(0);
+
+    expect(
+      state.data.items[0].product.variants[0].available
+    ).toBe(false);
   });
 
   it('не изменяет товар другого product_id', () => {
@@ -229,8 +265,9 @@ describe('cartSlice', () => {
               stock: 0,
               available: true,
               has_attributes: true,
-              attributes: [],
+              variants: [],
             },
+            variant: 20,
             quantity: 2,
             attribute_stock: 2,
             selected_attributes: {
@@ -244,8 +281,9 @@ describe('cartSlice', () => {
               stock: 0,
               available: true,
               has_attributes: true,
-              attributes: [],
+              variants: [],
             },
+            variant: 21,
             quantity: 1,
             attribute_stock: 1,
             selected_attributes: {
@@ -271,14 +309,32 @@ describe('cartSlice', () => {
             id: 1,
             name: 'диагональ',
             value: "60''",
-            stock: 0,
             available: true,
-            in_stock: false,
           },
           {
             id: 2,
             name: 'диагональ',
             value: "65''",
+            available: true,
+          },
+        ],
+        variants: [
+          {
+            id: 20,
+            attributes: {
+              диагональ: "60''",
+            },
+            price: '50000.00',
+            stock: 0,
+            available: true,
+            in_stock: false,
+          },
+          {
+            id: 21,
+            attributes: {
+              диагональ: "65''",
+            },
+            price: '50000.00',
             stock: 1,
             available: true,
             in_stock: true,
@@ -294,9 +350,17 @@ describe('cartSlice', () => {
     expect(
       state.data.items[1].attribute_stock
     ).toBe(1);
+
+    expect(
+      state.data.items[0].product.variants[0].stock
+    ).toBe(0);
+
+    expect(
+      state.data.items[1].product.variants[1].stock
+    ).toBe(1);
   });
 
-  it('не считает вариант недоступным, если product.stock равен 0, но остаток атрибута положительный', () => {
+  it('не считает вариант недоступным, если product.stock равен 0, но остаток варианта положительный', () => {
     const initialState = {
       data: {
         items: [
@@ -307,8 +371,9 @@ describe('cartSlice', () => {
               stock: 0,
               available: true,
               has_attributes: true,
-              attributes: [],
+              variants: [],
             },
+            variant: 20,
             quantity: 2,
             attribute_stock: 2,
             selected_attributes: {
@@ -334,14 +399,32 @@ describe('cartSlice', () => {
             id: 1,
             name: 'диагональ',
             value: "60''",
-            stock: 2,
             available: true,
-            in_stock: true,
           },
           {
             id: 2,
             name: 'диагональ',
             value: "65''",
+            available: true,
+          },
+        ],
+        variants: [
+          {
+            id: 20,
+            attributes: {
+              диагональ: "60''",
+            },
+            price: '50000.00',
+            stock: 2,
+            available: true,
+            in_stock: true,
+          },
+          {
+            id: 21,
+            attributes: {
+              диагональ: "65''",
+            },
+            price: '50000.00',
             stock: 1,
             available: true,
             in_stock: true,
@@ -361,5 +444,9 @@ describe('cartSlice', () => {
     expect(
       state.data.items[0].product.available
     ).toBe(true);
+
+    expect(
+      state.data.items[0].product.variants[0].stock
+    ).toBe(2);
   });
 });

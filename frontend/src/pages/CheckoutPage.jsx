@@ -87,36 +87,93 @@ function CheckoutPage() {
 
   const selectedTotal = useMemo(() => {
     return selectedItems.reduce(
-      (sum, item) => sum + Number(item.total_price || 0),
+      (sum, item) =>
+        sum + Number(item.total_price || 0),
       0
     );
   }, [selectedItems]);
 
-  const getItemStock = (item) => {
-    if (item.attribute_stock !== undefined) {
-      return item.attribute_stock;
+  const getVariant = (item) => {
+    if (!item?.variant) {
+      return null;
     }
 
-    return item.product.stock;
-  };
+    const variantId =
+      typeof item.variant === 'object'
+        ? item.variant.id
+        : item.variant;
 
-  const hasUnavailableItems = selectedItems.some((item) => {
-    const stock = getItemStock(item);
+    const variants = Array.isArray(
+      item.product?.variants
+    )
+      ? item.product.variants
+      : [];
 
     return (
-      item.product.available === false ||
-      stock < item.quantity
+      variants.find(
+        (variant) =>
+          variant.id === variantId
+      ) || null
     );
-  });
+  };
+
+  const getItemStock = (item) => {
+    if (
+      item.attribute_stock !== undefined &&
+      item.attribute_stock !== null
+    ) {
+      return Number(item.attribute_stock);
+    }
+
+    return Number(
+      item.product?.stock || 0
+    );
+  };
+
+  const isItemUnavailable = (item) => {
+    if (
+      item.product.available === false
+    ) {
+      return true;
+    }
+
+    const variant = getVariant(item);
+
+    if (item.variant && !variant) {
+      return true;
+    }
+
+    if (
+      variant &&
+      variant.available === false
+    ) {
+      return true;
+    }
+
+    const stock = getItemStock(item);
+
+    return stock < item.quantity;
+  };
+
+  const hasUnavailableItems =
+    selectedItems.some(
+      (item) =>
+        isItemUnavailable(item)
+    );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (selectedItemIds.length === 0) {
+    if (
+      selectedItemIds.length === 0
+    ) {
       return;
     }
 
-    if (selectedItems.length !== selectedItemIds.length) {
+    if (
+      selectedItems.length !==
+      selectedItemIds.length
+    ) {
       return;
     }
 
@@ -127,11 +184,16 @@ function CheckoutPage() {
     const result = await dispatch(
       createOrder({
         ...form,
-        selected_item_ids: selectedItemIds,
+        selected_item_ids:
+          selectedItemIds,
       })
     );
 
-    if (createOrder.fulfilled.match(result)) {
+    if (
+      createOrder.fulfilled.match(
+        result
+      )
+    ) {
       dispatch(fetchCart());
     }
   };
@@ -143,7 +205,10 @@ function CheckoutPage() {
           Оформление заказа доступно только для авторизованных пользователей
         </p>
 
-        <Link to="/cart" className="btn btn-primary">
+        <Link
+          to="/cart"
+          className="btn btn-primary"
+        >
           Вернуться в корзину
         </Link>
       </div>
@@ -155,39 +220,58 @@ function CheckoutPage() {
       <div className="checkout-page checkout-success">
         <h1>Заказ оформлен!</h1>
 
-        <p>Номер заказа: #{lastCreated.id}</p>
+        <p>
+          Номер заказа: #{lastCreated.id}
+        </p>
 
-        <p>Сумма: {lastCreated.total_price} ₽</p>
+        <p>
+          Сумма: {lastCreated.total_price} ₽
+        </p>
 
-        <Link to="/orders" className="btn btn-primary">
+        <Link
+          to="/orders"
+          className="btn btn-primary"
+        >
           Мои заказы
         </Link>
       </div>
     );
   }
 
-  if (!cartLoading && selectedItemIds.length === 0) {
+  if (
+    !cartLoading &&
+    selectedItemIds.length === 0
+  ) {
     return (
       <div className="checkout-page">
         <p className="empty-text">
           Не выбраны товары для оформления
         </p>
 
-        <Link to="/cart" className="btn btn-primary">
+        <Link
+          to="/cart"
+          className="btn btn-primary"
+        >
           Вернуться в корзину
         </Link>
       </div>
     );
   }
 
-  if (!cartLoading && selectedItems.length === 0) {
+  if (
+    !cartLoading &&
+    selectedItems.length === 0
+  ) {
     return (
       <div className="checkout-page">
         <p className="empty-text">
           Выбранные товары больше не находятся в корзине
         </p>
 
-        <Link to="/cart" className="btn btn-primary">
+        <Link
+          to="/cart"
+          className="btn btn-primary"
+        >
           Вернуться в корзину
         </Link>
       </div>
@@ -206,7 +290,8 @@ function CheckoutPage() {
           <div className="delivery-method-selector">
             <label
               className={`delivery-option ${
-                form.delivery_method === 'courier'
+                form.delivery_method ===
+                'courier'
                   ? 'active'
                   : ''
               }`}
@@ -216,7 +301,8 @@ function CheckoutPage() {
                 name="delivery_method"
                 value="courier"
                 checked={
-                  form.delivery_method === 'courier'
+                  form.delivery_method ===
+                  'courier'
                 }
                 onChange={handleChange}
               />
@@ -225,7 +311,8 @@ function CheckoutPage() {
 
             <label
               className={`delivery-option ${
-                form.delivery_method === 'pickup'
+                form.delivery_method ===
+                'pickup'
                   ? 'active'
                   : ''
               }`}
@@ -235,7 +322,8 @@ function CheckoutPage() {
                 name="delivery_method"
                 value="pickup"
                 checked={
-                  form.delivery_method === 'pickup'
+                  form.delivery_method ===
+                  'pickup'
                 }
                 onChange={handleChange}
               />
@@ -274,7 +362,8 @@ function CheckoutPage() {
             />
           </label>
 
-          {form.delivery_method === 'courier' && (
+          {form.delivery_method ===
+            'courier' && (
             <label>
               Адрес доставки
               <textarea
@@ -311,7 +400,8 @@ function CheckoutPage() {
               loading ||
               cartLoading ||
               hasUnavailableItems ||
-              selectedItems.length !== selectedItemIds.length
+              selectedItems.length !==
+                selectedItemIds.length
             }
           >
             {loading
@@ -325,11 +415,15 @@ function CheckoutPage() {
 
           {selectedItems.map((item) => {
             const attributes =
-              item.selected_attributes || {};
+              item.selected_attributes ||
+              {};
 
             const attributeString =
-              Object.keys(attributes).length > 0
-                ? Object.entries(attributes)
+              Object.keys(attributes)
+                .length > 0
+                ? Object.entries(
+                    attributes
+                  )
                     .map(
                       ([name, value]) =>
                         `${name}: ${value}`
@@ -337,22 +431,25 @@ function CheckoutPage() {
                     .join(', ')
                 : null;
 
-            const itemStock = getItemStock(item);
+            const itemStock =
+              getItemStock(item);
 
             const unavailable =
-              item.product.available === false ||
-              itemStock < item.quantity;
+              isItemUnavailable(item);
 
             return (
               <div
                 key={item.id}
                 className={`checkout-summary-item ${
-                  unavailable ? 'out-of-stock' : ''
+                  unavailable
+                    ? 'out-of-stock'
+                    : ''
                 }`}
               >
                 <div>
                   <span>
-                    {item.product.name} × {item.quantity}
+                    {item.product.name} ×{' '}
+                    {item.quantity}
                   </span>
 
                   {attributeString && (
@@ -375,13 +472,17 @@ function CheckoutPage() {
             );
           })}
 
-          {discountCalculation && !discountLoading ? (
+          {discountCalculation &&
+          !discountLoading ? (
             <>
               <div className="checkout-summary-total">
                 <span>Товары:</span>
 
                 <span>
-                  {discountCalculation.subtotal} ₽
+                  {
+                    discountCalculation.subtotal
+                  }{' '}
+                  ₽
                 </span>
               </div>
 
@@ -389,7 +490,11 @@ function CheckoutPage() {
                 <span>Скидка:</span>
 
                 <span>
-                  −{discountCalculation.discount_total} ₽
+                  −
+                  {
+                    discountCalculation.discount_total
+                  }{' '}
+                  ₽
                 </span>
               </div>
 
@@ -397,7 +502,10 @@ function CheckoutPage() {
                 <span>Итого:</span>
 
                 <strong>
-                  {discountCalculation.total} ₽
+                  {
+                    discountCalculation.total
+                  }{' '}
+                  ₽
                 </strong>
               </div>
             </>
@@ -408,7 +516,9 @@ function CheckoutPage() {
               <strong>
                 {discountLoading
                   ? 'Расчёт...'
-                  : `${selectedTotal.toFixed(2)} ₽`}
+                  : `${selectedTotal.toFixed(
+                      2
+                    )} ₽`}
               </strong>
             </div>
           )}

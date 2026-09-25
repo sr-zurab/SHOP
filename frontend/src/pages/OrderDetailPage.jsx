@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchOrderById, cancelOrder } from '../features/orders/ordersSlice';
+import {
+  fetchOrderById,
+  cancelOrder,
+} from '../features/orders/ordersSlice';
 
 const STATUS_LABELS = {
   pending: 'Ожидает оплаты',
@@ -19,10 +22,27 @@ const DELIVERY_LABELS = {
 function OrderDetailPage() {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const { list: orders, loading } = useSelector((state) => state.orders);
-  const order = orders.find((o) => String(o.id) === id);
-  const [cancelling, setCancelling] = useState(false);
-  const [confirmingCancel, setConfirmingCancel] = useState(false);
+
+  const {
+    list: orders,
+    loading,
+  } = useSelector(
+    (state) => state.orders
+  );
+
+  const order = orders.find(
+    (o) => String(o.id) === id
+  );
+
+  const [
+    cancelling,
+    setCancelling,
+  ] = useState(false);
+
+  const [
+    confirmingCancel,
+    setConfirmingCancel,
+  ] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -31,90 +51,227 @@ function OrderDetailPage() {
 
   const handleCancel = async () => {
     setCancelling(true);
-    await dispatch(cancelOrder(id));
+
+    await dispatch(
+      cancelOrder(id)
+    );
+
     setCancelling(false);
     setConfirmingCancel(false);
   };
 
   if (loading && !order) {
-    return <p className="loading-text">Загрузка...</p>;
+    return (
+      <p className="loading-text">
+        Загрузка...
+      </p>
+    );
   }
 
   if (!order) {
     return (
       <div className="order-detail-page">
-        <p className="empty-text">Заказ не найден</p>
-        <Link to="/orders" className="btn btn-primary">К списку заказов</Link>
+        <p className="empty-text">
+          Заказ не найден
+        </p>
+
+        <Link
+          to="/orders"
+          className="btn btn-primary"
+        >
+          К списку заказов
+        </Link>
       </div>
     );
   }
 
-  const canCancel = order.status === 'pending' || order.status === 'paid';
+  const canCancel =
+    order.status === 'pending' ||
+    order.status === 'paid';
 
-  const formatAttributes = (attrs) => {
-    if (!attrs || Object.keys(attrs).length === 0) return null;
-    return Object.entries(attrs).map(([name, value]) => `${name}: ${value}`).join(', ');
+  const formatAttributes = (
+    attrs
+  ) => {
+    if (
+      !attrs ||
+      Object.keys(attrs).length === 0
+    ) {
+      return null;
+    }
+
+    return Object.entries(attrs)
+      .map(
+        ([name, value]) =>
+          `${name}: ${value}`
+      )
+      .join(', ');
   };
 
   return (
     <div className="order-detail-page">
-      <Link to="/orders" className="back-link">← К списку заказов</Link>
+      <Link
+        to="/orders"
+        className="back-link"
+      >
+        ← К списку заказов
+      </Link>
 
       <div className="order-detail-header">
-        <h1>Заказ #{order.id}</h1>
-        <span className={`order-status order-status-${order.status}`}>
-          {STATUS_LABELS[order.status] || order.status}
+        <h1>
+          Заказ #{order.id}
+        </h1>
+
+        <span
+          className={`order-status order-status-${order.status}`}
+        >
+          {STATUS_LABELS[
+            order.status
+          ] || order.status}
         </span>
       </div>
 
       <div className="order-detail-section">
         <h2>Доставка</h2>
-        <p><strong>{DELIVERY_LABELS[order.delivery_method] || order.delivery_method}</strong></p>
-        <p>{order.full_name}</p>
-        <p>{order.email}</p>
-        <p>{order.phone}</p>
-        {order.address && <p>{order.address}</p>}
+
+        <p>
+          <strong>
+            {DELIVERY_LABELS[
+              order.delivery_method
+            ] ||
+              order.delivery_method}
+          </strong>
+        </p>
+
+        <p>
+          {order.full_name}
+        </p>
+
+        <p>
+          {order.email}
+        </p>
+
+        <p>
+          {order.phone}
+        </p>
+
+        {order.address && (
+          <p>
+            {order.address}
+          </p>
+        )}
       </div>
 
       <div className="order-detail-section">
         <h2>Состав заказа</h2>
-        {order.items.map((item) => {
-          const attrString = formatAttributes(item.selected_attributes);
-          return (
-            <div key={item.id} className="checkout-summary-item">
-              <div>
-                <span>{item.product_name} × {item.quantity}</span>
-                {attrString && <p className="order-item-attributes">{attrString}</p>}
+
+        {order.items.map(
+          (item) => {
+            const attrString =
+              formatAttributes(
+                item.selected_attributes
+              );
+
+            const itemPrice =
+              Number(
+                item.price || 0
+              );
+
+            const itemTotal =
+              itemPrice *
+              Number(
+                item.quantity || 0
+              );
+
+            return (
+              <div
+                key={item.id}
+                className="checkout-summary-item"
+              >
+                <div>
+                  <span>
+                    {item.product_name} ×{' '}
+                    {item.quantity}
+                  </span>
+
+                  {attrString && (
+                    <p className="order-item-attributes">
+                      {attrString}
+                    </p>
+                  )}
+                </div>
+
+                <span>
+                  {itemTotal.toFixed(
+                    2
+                  )}{' '}
+                  ₽
+                </span>
               </div>
-              <span>{item.price * item.quantity} ₽</span>
-            </div>
-          );
-        })}
+            );
+          }
+        )}
+
         <div className="checkout-summary-total">
           <span>Итого:</span>
-          <strong>{order.total_price} ₽</strong>
+
+          <strong>
+            {Number(
+              order.total_price || 0
+            ).toFixed(2)}{' '}
+            ₽
+          </strong>
         </div>
       </div>
 
       <div className="order-detail-section">
-        <h2>Комментарии менеджера</h2>
-        {(order.comments || []).length === 0 ? (
-          <p className="empty-text">Пока нет комментариев</p>
+        <h2>
+          Комментарии менеджера
+        </h2>
+
+        {(
+          order.comments || []
+        ).length === 0 ? (
+          <p className="empty-text">
+            Пока нет комментариев
+          </p>
         ) : (
           <div className="order-comments-list">
-            {(order.comments || []).map((comment) => (
-              <div key={comment.id} className="order-comment">
-                <div className="order-comment-meta">
-                  <strong>{comment.author_username || 'Менеджер'}</strong>
-                  <span>
-                    {new Date(comment.created).toLocaleString('ru-RU', {
-                      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-                    })}
-                  </span>
+            {(
+              order.comments || []
+            ).map(
+              (comment) => (
+                <div
+                  key={comment.id}
+                  className="order-comment"
+                >
+                  <div className="order-comment-meta">
+                    <strong>
+                      {comment.author_username ||
+                        'Менеджер'}
+                    </strong>
+
+                    <span>
+                      {new Date(
+                        comment.created
+                      ).toLocaleString(
+                        'ru-RU',
+                        {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute:
+                            '2-digit',
+                        }
+                      )}
+                    </span>
+                  </div>
+
+                  <p>
+                    {comment.text}
+                  </p>
                 </div>
-                <p>{comment.text}</p>
-              </div>
-            ))}
+              )
+            )}
           </div>
         )}
       </div>
@@ -122,16 +279,42 @@ function OrderDetailPage() {
       {canCancel && (
         <div className="order-detail-actions">
           {!confirmingCancel ? (
-            <button className="btn btn-remove" onClick={() => setConfirmingCancel(true)}>
+            <button
+              className="btn btn-remove"
+              onClick={() =>
+                setConfirmingCancel(
+                  true
+                )
+              }
+            >
               Отменить заказ
             </button>
           ) : (
             <div className="cancel-confirm">
-              <p>Точно отменить заказ?</p>
-              <button className="btn btn-remove" onClick={handleCancel} disabled={cancelling}>
-                {cancelling ? 'Отменяем...' : 'Да, отменить'}
+              <p>
+                Точно отменить заказ?
+              </p>
+
+              <button
+                className="btn btn-remove"
+                onClick={
+                  handleCancel
+                }
+                disabled={cancelling}
+              >
+                {cancelling
+                  ? 'Отменяем...'
+                  : 'Да, отменить'}
               </button>
-              <button className="btn btn-outline" onClick={() => setConfirmingCancel(false)}>
+
+              <button
+                className="btn btn-outline"
+                onClick={() =>
+                  setConfirmingCancel(
+                    false
+                  )
+                }
+              >
                 Не отменять
               </button>
             </div>

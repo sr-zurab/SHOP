@@ -7,7 +7,7 @@ import {
 } from '../features/products/productsSlice';
 import {
   fetchReviews,
-  } from '../features/reviews/reviewsSlice';
+} from '../features/reviews/reviewsSlice';
 import {
   fetchCart,
   addItem,
@@ -27,12 +27,23 @@ function ProductDetailPage() {
     error,
   } = useSelector((state) => state.products);
 
-  const { data: cart } = useSelector((state) => state.cart);
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { data: cart } = useSelector(
+    (state) => state.cart
+  );
 
-  const [activeImage, setActiveImage] = useState(null);
-  const [selectedAttributes, setSelectedAttributes] = useState({});
-  const [showAttrModal, setShowAttrModal] = useState(false);
+  const { isAuthenticated } =
+    useSelector((state) => state.auth);
+
+  const [activeImage, setActiveImage] =
+    useState(null);
+
+  const [
+    selectedAttributes,
+    setSelectedAttributes,
+  ] = useState({});
+
+  const [showAttrModal, setShowAttrModal] =
+    useState(false);
 
   useEffect(() => {
     dispatch(fetchProductBySlug(slug));
@@ -46,8 +57,8 @@ function ProductDetailPage() {
     if (product) {
       setActiveImage(
         product.main_image ||
-        product.images?.[0]?.image ||
-        product.thumbnail
+          product.images?.[0]?.image ||
+          product.thumbnail
       );
 
       dispatch(fetchReviews(product.id));
@@ -55,13 +66,20 @@ function ProductDetailPage() {
     }
   }, [product, dispatch]);
 
-  const findCartItem = (productId, attrs) => {
-    if (!cart?.items) return null;
+  const findCartItem = (
+    productId,
+    attrs
+  ) => {
+    if (!cart?.items) {
+      return null;
+    }
 
     return cart.items.find(
       (item) =>
         item.product.id === productId &&
-        JSON.stringify(item.selected_attributes || {}) ===
+        JSON.stringify(
+          item.selected_attributes || {}
+        ) ===
           JSON.stringify(attrs || {})
     );
   };
@@ -73,11 +91,106 @@ function ProductDetailPage() {
       selectedAttributes
     );
 
-  const isFullySelected = product?.grouped_attributes
-    ? Object.keys(product.grouped_attributes).every(
-        (name) => selectedAttributes[name]
-      )
-    : true;
+  const attributeNames =
+    product?.grouped_attributes
+      ? Object.keys(
+          product.grouped_attributes
+        )
+      : [];
+
+  const isFullySelected =
+    attributeNames.length === 0 ||
+    attributeNames.every(
+      (name) =>
+        selectedAttributes[name] !==
+          undefined &&
+        selectedAttributes[name] !==
+          null &&
+        selectedAttributes[name] !== ''
+    );
+
+  const productVariants =
+    Array.isArray(product?.variants)
+      ? product.variants
+      : [];
+
+  const normalizeAttributes = (
+    attributes = {}
+  ) => {
+    const normalized = {};
+
+    Object.entries(attributes).forEach(
+      ([name, value]) => {
+        if (
+          name === undefined ||
+          name === null ||
+          value === undefined ||
+          value === null
+        ) {
+          return;
+        }
+
+        normalized[
+          String(name).trim()
+        ] = String(value).trim();
+      }
+    );
+
+    return normalized;
+  };
+
+  const findSelectedVariant = () => {
+    if (!isFullySelected) {
+      return null;
+    }
+
+    const selected =
+      normalizeAttributes(
+        selectedAttributes
+      );
+
+    return (
+      productVariants.find(
+        (variant) => {
+          const attributes =
+            normalizeAttributes(
+              variant.attributes
+            );
+
+          const attributeKeys =
+            Object.keys(attributes);
+
+          const selectedKeys =
+            Object.keys(selected);
+
+          if (
+            attributeKeys.length !==
+            selectedKeys.length
+          ) {
+            return false;
+          }
+
+          return Object.entries(
+            selected
+          ).every(
+            ([name, value]) =>
+              attributes[name] === value
+          );
+        }
+      ) || null
+    );
+  };
+
+  const selectedVariant =
+    findSelectedVariant();
+
+  const selectedVariantInStock =
+    !product?.has_attributes ||
+    (
+      selectedVariant !== null &&
+      selectedVariant.available !== false &&
+      Number(selectedVariant.stock) > 0
+    );
 
   if (loading) {
     return (
@@ -95,22 +208,66 @@ function ProductDetailPage() {
     );
   }
 
-  if (!product) return null;
+  if (!product) {
+    return null;
+  }
 
   const discount = product.discount;
 
+  const availableVariants =
+    productVariants.filter(
+      (variant) =>
+        variant.available !== false &&
+        Number(variant.stock) > 0
+    );
+
+  const minVariantPrice =
+    availableVariants.length > 0
+      ? Math.min(
+          ...availableVariants.map(
+            (variant) =>
+              Number(variant.price)
+          )
+        )
+      : null;
+
+  const displayPrice =
+    product.has_attributes
+      ? selectedVariant
+        ? Number(selectedVariant.price)
+        : minVariantPrice !== null
+          ? minVariantPrice
+          : Number(product.price)
+      : Number(product.price);
+
+  const isVariantPrice =
+    product.has_attributes &&
+    selectedVariant !== null;
+
   const hasPercentDiscount =
     discount?.type === 'percent' &&
-    discount.price_after_discount !== null &&
-    Number(discount.amount) > 0;
+    Number(discount.value || 0) > 0;
+
+  const discountedPrice =
+    displayPrice *
+    (
+      1 -
+      Number(discount?.value || 0) / 100
+    );
 
   const handleAddToCart = async () => {
-    if (!isFullySelected) {
+    if (
+      !isFullySelected ||
+      !selectedVariantInStock
+    ) {
       setShowAttrModal(true);
       return;
     }
 
-    await dispatch(addItemWithAttrs());
+    await dispatch(
+      addItemWithAttrs()
+    );
+
     setShowAttrModal(false);
   };
 
@@ -159,7 +316,8 @@ function ProductDetailPage() {
                   }
                   alt={`${product.name} главная картинка`}
                   className={
-                    activeImage === product.main_image
+                    activeImage ===
+                    product.main_image
                       ? 'active'
                       : ''
                   }
@@ -171,21 +329,26 @@ function ProductDetailPage() {
                 />
               )}
 
-              {product.images.map((img) => (
-                <img
-                  key={img.id}
-                  src={img.thumbnail}
-                  alt={product.name}
-                  className={
-                    activeImage === img.image
-                      ? 'active'
-                      : ''
-                  }
-                  onClick={() =>
-                    setActiveImage(img.image)
-                  }
-                />
-              ))}
+              {product.images.map(
+                (img) => (
+                  <img
+                    key={img.id}
+                    src={img.thumbnail}
+                    alt={product.name}
+                    className={
+                      activeImage ===
+                      img.image
+                        ? 'active'
+                        : ''
+                    }
+                    onClick={() =>
+                      setActiveImage(
+                        img.image
+                      )
+                    }
+                  />
+                )
+              )}
             </div>
           )}
         </div>
@@ -214,19 +377,25 @@ function ProductDetailPage() {
               </span>
 
               <span className="rating-count">
-                ({product.reviews_count} отзывов)
+                ({product.reviews_count}{' '}
+                отзывов)
               </span>
             </div>
           )}
 
           {hasPercentDiscount ? (
             <div className="product-detail-price">
+              {!isVariantPrice &&
+                product.has_attributes && (
+                  <span>от </span>
+                )}
+
               <span className="product-detail-old-price">
-                {product.price} ₽
+                {displayPrice.toFixed(2)} ₽
               </span>
 
               <span className="product-detail-new-price">
-                {discount.price_after_discount} ₽
+                {discountedPrice.toFixed(2)} ₽
               </span>
 
               <span className="product-detail-discount">
@@ -235,7 +404,12 @@ function ProductDetailPage() {
             </div>
           ) : (
             <p className="product-detail-price">
-              {product.price} ₽
+              {!isVariantPrice &&
+                product.has_attributes && (
+                  <span>от </span>
+                )}
+
+              {displayPrice.toFixed(2)} ₽
             </p>
           )}
 
@@ -265,6 +439,9 @@ function ProductDetailPage() {
                 groupedAttributes={
                   product.grouped_attributes
                 }
+                variants={
+                  product.variants || []
+                }
                 onChange={
                   setSelectedAttributes
                 }
@@ -280,6 +457,9 @@ function ProductDetailPage() {
             selectedAttributes={
               selectedAttributes
             }
+            attributeGroups={
+              product.grouped_attributes || {}
+            }
             isInCart={isInCart}
             isFullySelected={
               isFullySelected
@@ -287,7 +467,11 @@ function ProductDetailPage() {
             onAddToCart={
               handleAddToCart
             }
-            disabled={!product.in_stock}
+            disabled={
+              product.has_attributes
+                ? !product.in_stock
+                : !product.in_stock
+            }
           />
         </div>
       </div>
@@ -313,6 +497,9 @@ function ProductDetailPage() {
               groupedAttributes={
                 product.grouped_attributes
               }
+              variants={
+                product.variants || []
+              }
               onChange={
                 setSelectedAttributes
               }
@@ -334,12 +521,18 @@ function ProductDetailPage() {
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  if (isFullySelected) {
+                  if (
+                    isFullySelected &&
+                    selectedVariantInStock
+                  ) {
                     addItemWithAttrs();
                     setShowAttrModal(false);
                   }
                 }}
-                disabled={!isFullySelected}
+                disabled={
+                  !isFullySelected ||
+                  !selectedVariantInStock
+                }
               >
                 В корзину
               </button>
