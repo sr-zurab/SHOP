@@ -6,13 +6,7 @@ from imagekit.processors import ResizeToFill, ResizeToFit
 
 class Category(models.Model):
     name = models.CharField(max_length=200)
-
-    slug = models.SlugField(
-        max_length=200,
-        unique=True,
-        allow_unicode=True,
-    )
-
+    slug = models.SlugField(max_length=200, unique=True, allow_unicode=True)
     parent = models.ForeignKey(
         'self',
         related_name='children',
@@ -61,32 +55,17 @@ class Product(models.Model):
         related_name='products',
         on_delete=models.PROTECT,
     )
-
     name = models.CharField(max_length=200)
-
-    slug = models.SlugField(
-        max_length=200,
-        unique=True,
-    )
-
+    slug = models.SlugField(max_length=200, unique=True)
     image = models.ImageField(
         upload_to='products/%Y/%m/%d',
         blank=True,
     )
-
     description = models.TextField(blank=True)
-
-    price = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-    )
-
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     available = models.BooleanField(default=True)
-
     stock = models.PositiveIntegerField(default=0)
-
     created = models.DateTimeField(auto_now_add=True)
-
     updated = models.DateTimeField(auto_now=True)
 
     thumbnail = ImageSpecField(
@@ -121,11 +100,9 @@ class ProductImage(models.Model):
         related_name='images',
         on_delete=models.CASCADE,
     )
-
     image = models.ImageField(
         upload_to='products/gallery/%Y/%m/%d',
     )
-
     order = models.PositiveIntegerField(default=0)
 
     thumbnail = ImageSpecField(
@@ -155,27 +132,64 @@ class ProductAttribute(models.Model):
         related_name='attributes',
         on_delete=models.CASCADE,
     )
-
     name = models.CharField(max_length=100)
-
     value = models.CharField(max_length=100)
-
-    stock = models.PositiveIntegerField(default=0)
-
     available = models.BooleanField(default=True)
-
     created = models.DateTimeField(auto_now_add=True)
-
     updated = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('product', 'name', 'value')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['product', 'name', 'value'],
+                name='unique_product_attribute_value',
+            ),
+        ]
         indexes = [
             models.Index(fields=['available']),
+            models.Index(fields=['product', 'name']),
         ]
 
     def __str__(self):
         return f'{self.product.name} — {self.name}: {self.value}'
+
+
+class ProductVariant(models.Model):
+    product = models.ForeignKey(
+        Product,
+        related_name='variants',
+        on_delete=models.CASCADE,
+    )
+    attributes = models.JSONField(default=dict)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    stock = models.PositiveIntegerField(default=0)
+    available = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['product', 'attributes'],
+                name='unique_product_variant_attributes',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['product']),
+            models.Index(fields=['available']),
+            models.Index(fields=['product', 'available']),
+        ]
+
+    def __str__(self):
+        if not self.attributes:
+            return f'{self.product.name} — вариант'
+
+        attributes_text = ', '.join(
+            f'{name}: {value}'
+            for name, value in self.attributes.items()
+        )
+
+        return f'{self.product.name} — {attributes_text}'
 
     @property
     def in_stock(self):

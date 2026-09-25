@@ -73,9 +73,15 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         return [IsManagerOrReadOnly()]
 
-    @action(detail=False, methods=['get'], url_path='manager-list')
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='manager-list',
+    )
     def manager_list(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(
+            self.get_queryset()
+        )
 
         page = self.paginate_queryset(queryset)
 
@@ -86,7 +92,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
 
         if page is not None:
-            return self.get_paginated_response(serializer.data)
+            return self.get_paginated_response(
+                serializer.data
+            )
 
         return Response(serializer.data)
 
@@ -160,7 +168,10 @@ class ProductViewSet(viewsets.ModelViewSet):
                 for category in discount.categories.all()
             }
 
-            if not discount_product_ids and not discount_category_ids:
+            if (
+                not discount_product_ids
+                and not discount_category_ids
+            ):
                 global_discounts.append(discount)
                 continue
 
@@ -187,10 +198,14 @@ class ProductViewSet(viewsets.ModelViewSet):
         }
 
     def get_queryset(self):
-        qs = Product.objects.select_related('category')
+        qs = Product.objects.select_related(
+            'category'
+        )
 
         if self.action == 'list':
-            qs = qs.filter(available=True)
+            qs = qs.filter(
+                available=True
+            )
 
             qs = qs.annotate(
                 orders_count=Count(
@@ -204,6 +219,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
             qs = qs.prefetch_related(
                 'attributes',
+                'variants',
                 'discounts',
                 'category__discounts',
             )
@@ -211,9 +227,14 @@ class ProductViewSet(viewsets.ModelViewSet):
             qs = qs.prefetch_related(
                 'images',
                 'attributes',
+                'variants',
             )
 
-        category_slug = self.request.query_params.get('category')
+        category_slug = (
+            self.request.query_params.get(
+                'category'
+            )
+        )
 
         if category_slug:
             category = Category.objects.filter(
@@ -221,22 +242,28 @@ class ProductViewSet(viewsets.ModelViewSet):
             ).first()
 
             if category:
-                category_ids = self._get_category_tree_ids(
-                    category,
+                category_ids = (
+                    self._get_category_tree_ids(
+                        category,
+                    )
                 )
 
                 qs = qs.filter(
                     category_id__in=category_ids,
                 )
 
-        search = self.request.query_params.get('search')
+        search = self.request.query_params.get(
+            'search'
+        )
 
         if search:
             qs = qs.filter(
                 name__icontains=search,
             )
 
-        ordering = self.request.query_params.get('ordering')
+        ordering = self.request.query_params.get(
+            'ordering'
+        )
 
         if ordering in ORDERING_MAP:
             qs = qs.order_by(
@@ -317,6 +344,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
 
         context = self.get_serializer_context()
+
         context.update(
             self._get_product_display_discounts(
                 [instance],
@@ -332,7 +360,9 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def _create_gallery_images(self, product):
         for order, image in enumerate(
-            self.request.FILES.getlist('gallery_images')
+            self.request.FILES.getlist(
+                'gallery_images'
+            )
         ):
             ProductImage.objects.create(
                 product=product,
@@ -419,7 +449,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
         except ProtectedError:
             return Response(
                 {
-                    'detail': 'Нельзя удалить категорию: в ней есть товары'
+                    'detail': (
+                        'Нельзя удалить категорию: '
+                        'в ней есть товары'
+                    )
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )

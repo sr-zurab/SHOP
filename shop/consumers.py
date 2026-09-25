@@ -30,5 +30,6 @@ class ProductStockConsumer(AsyncWebsocketConsumer):
                 'available': event.get('available', True),
                 'has_attributes': event.get('has_attributes', False),
                 'attributes': event.get('attributes', []),
+                'variants': event.get('variants', []),
             })
         )

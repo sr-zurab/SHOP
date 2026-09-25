@@ -50,7 +50,13 @@ def restore_order_stock(order):
     product_ids = sorted({
         item.product_id
         for item in order.items.all()
-        if item.product_id
+        if item.product_id and item.variant_id is None
+    })
+
+    variant_ids = sorted({
+        item.variant_id
+        for item in order.items.all()
+        if item.variant_id
     })
 
     locked_products = {
@@ -63,32 +69,46 @@ def restore_order_stock(order):
         )
     }
 
+    from shop.models import ProductVariant
+
+    locked_variants = {
+        variant.pk: variant
+        for variant in (
+            ProductVariant.objects
+            .select_for_update()
+            .filter(pk__in=variant_ids)
+            .order_by('pk')
+        )
+    }
+
     for item in order.items.all():
+        if item.variant_id:
+            variant = locked_variants.get(
+                item.variant_id
+            )
+
+            if variant:
+                variant.stock += item.quantity
+                variant.save(
+                    update_fields=['stock']
+                )
+
+            continue
+
         if not item.product_id:
             continue
 
-        product = locked_products.get(item.product_id)
+        product = locked_products.get(
+            item.product_id
+        )
 
         if not product:
             continue
 
-        if item.selected_attributes:
-            for name, value in item.selected_attributes.items():
-                attr = product.attributes.filter(
-                    name=name,
-                    value=value
-                ).first()
-
-                if attr:
-                    attr.stock += item.quantity
-                    attr.save(
-                        update_fields=['stock']
-                    )
-        else:
-            product.stock += item.quantity
-            product.save(
-                update_fields=['stock']
-            )
+        product.stock += item.quantity
+        product.save(
+            update_fields=['stock']
+        )
 
 
 class OrderViewSet(viewsets.ViewSet):
@@ -100,6 +120,7 @@ class OrderViewSet(viewsets.ViewSet):
             .filter(user=request.user)
             .prefetch_related(
                 'items',
+                'items__variant',
                 'comments',
                 'comments__author'
             )
@@ -113,6 +134,7 @@ class OrderViewSet(viewsets.ViewSet):
         order = get_object_or_404(
             Order.objects.prefetch_related(
                 'items',
+                'items__variant',
                 'comments',
                 'comments__author'
             ),
@@ -171,8 +193,13 @@ class OrderViewSet(viewsets.ViewSet):
 
         cart_items = (
             cart.items
-            .select_related('product')
-            .prefetch_related('product__attributes')
+            .select_related(
+                'product',
+                'variant',
+            )
+            .prefetch_related(
+                'product__attributes'
+            )
             .filter(id__in=selected_item_ids)
         )
 
@@ -219,15 +246,22 @@ class OrderViewSet(viewsets.ViewSet):
             # БЛОКИРОВКА ТОВАРОВ
             # -------------------------------------------------
             #
-            # Все Product блокируются в одном и том же порядке.
-            # Это снижает риск deadlock при параллельном checkout.
+            # Простые товары блокируются через Product.
+            # Для товаров с вариантами дополнительно блокируются
+            # конкретные ProductVariant.
             #
-            # Если в корзине несколько вариантов одного товара,
-            # Product блокируется только один раз.
+            # Все блокировки выполняются в детерминированном
+            # порядке.
 
             product_ids = sorted({
                 cart_item.product.pk
                 for cart_item in cart_items
+            })
+
+            variant_ids = sorted({
+                cart_item.variant.pk
+                for cart_item in cart_items
+                if cart_item.variant_id
             })
 
             locked_products = {}
@@ -241,8 +275,21 @@ class OrderViewSet(viewsets.ViewSet):
 
                 locked_products[product.pk] = product
 
+            from shop.models import ProductVariant
+
+            locked_variants = {}
+
+            for variant_id in variant_ids:
+                variant = (
+                    ProductVariant.objects
+                    .select_for_update()
+                    .get(pk=variant_id)
+                )
+
+                locked_variants[variant.pk] = variant
+
             # -------------------------------------------------
-            # ПРОВЕРКА ТОВАРОВ И АТРИБУТОВ
+            # ПРОВЕРКА ТОВАРОВ И ВАРИАНТОВ
             # -------------------------------------------------
 
             for cart_item in cart_items:
@@ -250,77 +297,64 @@ class OrderViewSet(viewsets.ViewSet):
                     cart_item.product.pk
                 ]
 
-                selected_attrs = (
-                    cart_item.selected_attributes or {}
+                variant = (
+                    locked_variants.get(
+                        cart_item.variant_id
+                    )
+                    if cart_item.variant_id
+                    else None
                 )
 
-                if selected_attrs:
-                    for name, value in selected_attrs.items():
-                        attr = product.attributes.filter(
-                            name=name,
-                            value=value
-                        ).first()
-
-                        if not attr:
-                            return Response(
-                                {
-                                    'detail': (
-                                        f'Атрибут "{name}: {value}" '
-                                        f'не найден для товара '
-                                        f'"{product.name}"'
-                                    )
-                                },
-                                status=status.HTTP_400_BAD_REQUEST
-                            )
-
-                        if not attr.available:
-                            return Response(
-                                {
-                                    'detail': (
-                                        f'Вариант "{product.name}" '
-                                        f'({name}: {value}) '
-                                        f'недоступен'
-                                    )
-                                },
-                                status=status.HTTP_400_BAD_REQUEST
-                            )
-
-                        if attr.stock < cart_item.quantity:
-                            return Response(
-                                {
-                                    'detail': (
-                                        f'Недостаточно '
-                                        f'"{product.name}" '
-                                        f'({name}: {value}) '
-                                        f'на складе'
-                                    )
-                                },
-                                status=status.HTTP_400_BAD_REQUEST
-                            )
-
-                else:
-                    if not product.available:
+                if variant is not None:
+                    if not variant.available:
                         return Response(
                             {
                                 'detail': (
-                                    f'Товар "{product.name}" '
+                                    f'Вариант товара '
+                                    f'"{product.name}" '
                                     f'недоступен'
                                 )
                             },
                             status=status.HTTP_400_BAD_REQUEST
                         )
 
-                    if product.stock < cart_item.quantity:
+                    if variant.stock < cart_item.quantity:
                         return Response(
                             {
                                 'detail': (
                                     f'Недостаточно '
                                     f'"{product.name}" '
+                                    f'выбранного варианта '
                                     f'на складе'
                                 )
                             },
                             status=status.HTTP_400_BAD_REQUEST
                         )
+
+                    continue
+
+                if not product.available:
+                    return Response(
+                        {
+                            'detail': (
+                                f'Товар "{product.name}" '
+                                f'недоступен'
+                            )
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                if product.stock < cart_item.quantity:
+                    return Response(
+                        {
+                            'detail': (
+                                f'Недостаточно '
+                                f'"{product.name}" '
+                                f'на складе'
+                            )
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
             # -------------------------------------------------
             # СКИДКИ
@@ -347,11 +381,6 @@ class OrderViewSet(viewsets.ViewSet):
                 )
             )
 
-            # Сначала только определяем подходящие Discount ID.
-            #
-            # Здесь DISTINCT разрешён, потому что блокировки
-            # ещё нет.
-
             discount_ids = list(
                 Discount.objects
                 .filter(
@@ -363,15 +392,6 @@ class OrderViewSet(viewsets.ViewSet):
                 .values_list('id', flat=True)
                 .distinct()
             )
-
-            # Теперь отдельным запросом блокируем только те
-            # скидки, которые потенциально могут примениться.
-            #
-            # DISTINCT здесь уже не нужен, поэтому PostgreSQL
-            # разрешает FOR UPDATE.
-            #
-            # Сортировка по id делает порядок блокировок
-            # детерминированным и снижает риск deadlock.
 
             active_discounts = list(
                 Discount.objects
@@ -399,21 +419,38 @@ class OrderViewSet(viewsets.ViewSet):
                 )
             ]
 
-            discount_lines = [
-                DiscountLine(
-                    product=locked_products[
-                        cart_item.product.pk
-                    ],
-                    quantity=cart_item.quantity,
-                    unit_price=locked_products[
-                        cart_item.product.pk
-                    ].price,
-                    selected_attributes=(
-                        cart_item.selected_attributes or {}
-                    ),
+            discount_lines = []
+
+            for cart_item in cart_items:
+                product = locked_products[
+                    cart_item.product.pk
+                ]
+
+                variant = (
+                    locked_variants.get(
+                        cart_item.variant_id
+                    )
+                    if cart_item.variant_id
+                    else None
                 )
-                for cart_item in cart_items
-            ]
+
+                unit_price = (
+                    variant.price
+                    if variant is not None
+                    else product.price
+                )
+
+                discount_lines.append(
+                    DiscountLine(
+                        product=product,
+                        quantity=cart_item.quantity,
+                        unit_price=unit_price,
+                        selected_attributes=(
+                            cart_item.selected_attributes
+                            or {}
+                        ),
+                    )
+                )
 
             calculation = calculate_discounts(
                 lines=discount_lines,
@@ -442,25 +479,27 @@ class OrderViewSet(viewsets.ViewSet):
                     cart_item.product.pk
                 ]
 
-                selected_attrs = (
-                    cart_item.selected_attributes or {}
+                variant = (
+                    locked_variants.get(
+                        cart_item.variant_id
+                    )
+                    if cart_item.variant_id
+                    else None
                 )
 
-                if selected_attrs:
-                    for name, value in selected_attrs.items():
-                        attr = product.attributes.filter(
-                            name=name,
-                            value=value
-                        ).first()
+                selected_attrs = (
+                    cart_item.selected_attributes
+                    or {}
+                )
 
-                        # Все проверки выше уже прошли.
-                        # Здесь только фактическое списание.
+                if variant is not None:
+                    variant.stock -= cart_item.quantity
 
-                        attr.stock -= cart_item.quantity
+                    variant.save(
+                        update_fields=['stock']
+                    )
 
-                        attr.save(
-                            update_fields=['stock']
-                        )
+                    order_price = variant.price
 
                 else:
                     product.stock -= cart_item.quantity
@@ -469,13 +508,16 @@ class OrderViewSet(viewsets.ViewSet):
                         update_fields=['stock']
                     )
 
+                    order_price = product.price
+
                 OrderItem.objects.create(
                     order=order,
                     product=product,
+                    variant=variant,
                     product_name=product.name,
-                    price=product.price,
+                    price=order_price,
                     quantity=cart_item.quantity,
-                    selected_attributes=selected_attrs
+                    selected_attributes=selected_attrs,
                 )
 
             # -------------------------------------------------
@@ -502,6 +544,7 @@ class OrderViewSet(viewsets.ViewSet):
             Order.objects
             .prefetch_related(
                 'items',
+                'items__variant',
                 'comments',
                 'comments__author'
             )
@@ -573,6 +616,7 @@ class OrderViewSet(viewsets.ViewSet):
             Order.objects
             .prefetch_related(
                 'items',
+                'items__variant',
                 'comments',
                 'comments__author'
             )
@@ -594,6 +638,7 @@ class ManagerOrderListView(APIView):
             .select_related('user')
             .prefetch_related(
                 'items',
+                'items__variant',
                 'comments',
                 'comments__author'
             )
@@ -687,6 +732,7 @@ class ManagerOrderDetailView(APIView):
             .select_related('user')
             .prefetch_related(
                 'items',
+                'items__variant',
                 'comments',
                 'comments__author'
             ),
@@ -724,6 +770,7 @@ class ManagerOrderStatusView(APIView):
                 .select_related('user')
                 .prefetch_related(
                     'items',
+                    'items__variant',
                     'comments',
                     'comments__author'
                 )
@@ -752,6 +799,7 @@ class ManagerOrderStatusView(APIView):
             .select_related('user')
             .prefetch_related(
                 'items',
+                'items__variant',
                 'comments',
                 'comments__author'
             )

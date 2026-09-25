@@ -11,6 +11,16 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'product',
+            'variant',
+            'product_name',
+            'price',
+            'quantity',
+            'selected_attributes',
+        ]
+        read_only_fields = [
+            'id',
+            'product',
+            'variant',
             'product_name',
             'price',
             'quantity',

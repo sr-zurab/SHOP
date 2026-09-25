@@ -73,7 +73,8 @@ class DiscountCalculator:
     Не выполняет side effects.
 
     Stackable-скидки применяются последовательно:
-    следующая скидка рассчитывается от текущей стоимости.
+    следующая скидка рассчитывается от текущей стоимости
+    после предыдущих скидок.
 
     FIXED-скидка применяется один раз за одно применение.
     """
@@ -142,6 +143,7 @@ class DiscountCalculator:
             if discount.discount_type == DiscountType.PERCENT:
                 self._apply_percent_discount(
                     discount=discount,
+                    discount_amount=discount_amount,
                 )
 
             elif discount.discount_type == DiscountType.FIXED:
@@ -327,22 +329,25 @@ class DiscountCalculator:
     def _apply_percent_discount(
         self,
         discount: Discount,
+        discount_amount: Decimal,
     ):
-        multiplier = (
-            Decimal("1.00")
-            - discount.value / Decimal("100")
+        """
+        Применяет фактически рассчитанную процентную скидку.
+
+        discount_amount уже учитывает:
+        - процент скидки;
+        - max_discount_amount;
+        - текущую сумму заказа.
+
+        Скидка распределяется пропорционально между подходящими
+        строками, чтобы current_amount каждой строки оставался
+        корректным для следующих stackable-скидок.
+        """
+
+        self._apply_discount_to_matching_lines(
+            discount=discount,
+            discount_amount=discount_amount,
         )
-
-        for state in self._line_states:
-            if not self._line_matches_discount(
-                discount=discount,
-                state=state,
-            ):
-                continue
-
-            state.current_amount = money(
-                state.current_amount * multiplier
-            )
 
     def _apply_fixed_discount(
         self,
@@ -361,6 +366,27 @@ class DiscountCalculator:
 
         Это внутреннее техническое распределение и не является
         отдельной скидкой для каждого товара.
+        """
+
+        self._apply_discount_to_matching_lines(
+            discount=discount,
+            discount_amount=discount_amount,
+        )
+
+    def _apply_discount_to_matching_lines(
+        self,
+        discount: Discount,
+        discount_amount: Decimal,
+    ):
+        """
+        Распределяет одну фактически применённую сумму скидки
+        между всеми подходящими строками.
+
+        Распределение необходимо только для поддержания
+        корректного current_amount после скидки.
+
+        Общая сумма уменьшения строк всегда равна
+        discount_amount с учётом округления до копеек.
         """
 
         applicable_states = [
@@ -387,6 +413,16 @@ class DiscountCalculator:
         )
 
         if applicable_total <= Decimal("0.00"):
+            return
+
+        discount_amount = money(
+            min(
+                discount_amount,
+                applicable_total,
+            )
+        )
+
+        if discount_amount <= Decimal("0.00"):
             return
 
         remaining_discount = discount_amount

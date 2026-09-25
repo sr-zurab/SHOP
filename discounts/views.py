@@ -42,7 +42,10 @@ class DiscountCalculateAPIView(APIView):
 
         cart_items = list(
             cart.items
-            .select_related('product')
+            .select_related(
+                'product',
+                'variant',
+            )
             .prefetch_related(
                 'product__attributes',
                 'product__discounts',
@@ -67,7 +70,11 @@ class DiscountCalculateAPIView(APIView):
             DiscountLine(
                 product=item.product,
                 quantity=item.quantity,
-                unit_price=item.product.price,
+                unit_price=(
+                    item.variant.price
+                    if item.variant_id is not None
+                    else item.product.price
+                ),
                 selected_attributes=item.selected_attributes or {},
             )
             for item in cart_items

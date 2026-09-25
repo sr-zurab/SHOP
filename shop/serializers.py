@@ -11,6 +11,7 @@ from .models import (
     Category,
     ProductImage,
     ProductAttribute,
+    ProductVariant,
 )
 
 
@@ -59,7 +60,12 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductImage
-        fields = ['id', 'image', 'thumbnail', 'order']
+        fields = [
+            'id',
+            'image',
+            'thumbnail',
+            'order',
+        ]
 
     def get_image(self, obj):
         request = self.context.get('request')
@@ -81,14 +87,25 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class ProductAttributeSerializer(serializers.ModelSerializer):
-    in_stock = serializers.SerializerMethodField()
-
     class Meta:
         model = ProductAttribute
         fields = [
             'id',
             'name',
             'value',
+            'available',
+        ]
+
+
+class ProductVariantSerializer(serializers.ModelSerializer):
+    in_stock = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductVariant
+        fields = [
+            'id',
+            'attributes',
+            'price',
             'stock',
             'available',
             'in_stock',
@@ -124,6 +141,10 @@ class ProductListSerializer(serializers.ModelSerializer):
     in_stock = serializers.SerializerMethodField()
     has_attributes = serializers.SerializerMethodField()
     grouped_attributes = serializers.SerializerMethodField()
+    variants = ProductVariantSerializer(
+        many=True,
+        read_only=True,
+    )
     discount = serializers.SerializerMethodField()
 
     class Meta:
@@ -139,6 +160,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             'stock',
             'has_attributes',
             'grouped_attributes',
+            'variants',
             'discount',
         ]
 
@@ -155,8 +177,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         )
 
     def get_in_stock(self, obj):
-        if obj.attributes.exists():
-            return obj.attributes.filter(
+        if obj.variants.exists():
+            return obj.variants.filter(
                 available=True,
                 stock__gt=0,
             ).exists()
@@ -167,16 +189,20 @@ class ProductListSerializer(serializers.ModelSerializer):
         return obj.attributes.exists()
 
     def get_grouped_attributes(self, obj):
-        attrs = obj.attributes.filter(available=True)
+        attrs = obj.attributes.filter(
+            available=True,
+        )
+
         grouped = {}
 
         for attr in attrs:
-            grouped.setdefault(attr.name, []).append({
+            grouped.setdefault(
+                attr.name,
+                [],
+            ).append({
                 'id': attr.id,
                 'value': attr.value,
-                'stock': attr.stock,
                 'available': attr.available,
-                'in_stock': attr.in_stock,
             })
 
         return grouped
@@ -214,12 +240,11 @@ class ProductListSerializer(serializers.ModelSerializer):
         discounts.extend(global_discounts)
 
         unique_discounts = {}
+
         for discount in discounts:
             unique_discounts[discount.id] = discount
 
-        return list(
-            unique_discounts.values()
-        )
+        return list(unique_discounts.values())
 
     def _get_discount_data(self, obj, discount):
         value = Decimal(discount.value)
@@ -234,9 +259,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             if discount.max_discount_amount is not None:
                 amount = min(
                     amount,
-                    Decimal(
-                        discount.max_discount_amount
-                    ),
+                    Decimal(discount.max_discount_amount),
                 )
 
             amount = min(
@@ -296,13 +319,19 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         many=True,
         read_only=True,
     )
-    category = CategorySerializer(read_only=True)
+    category = CategorySerializer(
+        read_only=True,
+    )
     main_image = serializers.SerializerMethodField()
     thumbnail = serializers.SerializerMethodField()
     in_stock = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
     attributes = ProductAttributeSerializer(
+        many=True,
+        read_only=True,
+    )
+    variants = ProductVariantSerializer(
         many=True,
         read_only=True,
     )
@@ -326,6 +355,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'average_rating',
             'reviews_count',
             'attributes',
+            'variants',
             'grouped_attributes',
             'discount',
         ]
@@ -337,7 +367,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return None
 
         return (
-            request.build_absolute_uri(obj.image_detail.url)
+            request.build_absolute_uri(
+                obj.image_detail.url
+            )
             if request
             else obj.image_detail.url
         )
@@ -349,14 +381,16 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             return None
 
         return (
-            request.build_absolute_uri(obj.thumbnail.url)
+            request.build_absolute_uri(
+                obj.thumbnail.url
+            )
             if request
             else obj.thumbnail.url
         )
 
     def get_in_stock(self, obj):
-        if obj.attributes.exists():
-            return obj.attributes.filter(
+        if obj.variants.exists():
+            return obj.variants.filter(
                 available=True,
                 stock__gt=0,
             ).exists()
@@ -374,16 +408,20 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return obj.reviews.count()
 
     def get_grouped_attributes(self, obj):
-        attrs = obj.attributes.filter(available=True)
+        attrs = obj.attributes.filter(
+            available=True,
+        )
+
         grouped = {}
 
         for attr in attrs:
-            grouped.setdefault(attr.name, []).append({
+            grouped.setdefault(
+                attr.name,
+                [],
+            ).append({
                 'id': attr.id,
                 'value': attr.value,
-                'stock': attr.stock,
                 'available': attr.available,
-                'in_stock': attr.in_stock,
             })
 
         return grouped
@@ -421,12 +459,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         discounts.extend(global_discounts)
 
         unique_discounts = {}
+
         for discount in discounts:
             unique_discounts[discount.id] = discount
 
-        return list(
-            unique_discounts.values()
-        )
+        return list(unique_discounts.values())
 
     def _get_discount_data(self, obj, discount):
         value = Decimal(discount.value)
@@ -441,9 +478,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             if discount.max_discount_amount is not None:
                 amount = min(
                     amount,
-                    Decimal(
-                        discount.max_discount_amount
-                    ),
+                    Decimal(discount.max_discount_amount),
                 )
 
             amount = min(
@@ -505,13 +540,49 @@ class ProductAttributeWriteSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'value',
-            'stock',
             'available',
         ]
 
 
+class ProductVariantWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVariant
+        fields = [
+            'id',
+            'attributes',
+            'price',
+            'stock',
+            'available',
+        ]
+
+    def validate_attributes(self, attributes):
+        if not isinstance(attributes, dict):
+            raise serializers.ValidationError(
+                'Атрибуты варианта должны быть объектом.'
+            )
+
+        normalized = {}
+
+        for name, value in attributes.items():
+            name = str(name).strip()
+            value = str(value).strip()
+
+            if not name or not value:
+                raise serializers.ValidationError(
+                    'Название и значение атрибута не могут быть пустыми.'
+                )
+
+            normalized[name] = value
+
+        return normalized
+
+
 class ProductWriteSerializer(serializers.ModelSerializer):
     attributes = ProductAttributeWriteSerializer(
+        many=True,
+        required=False,
+    )
+    variants = ProductVariantWriteSerializer(
         many=True,
         required=False,
     )
@@ -529,6 +600,7 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             'stock',
             'image',
             'attributes',
+            'variants',
         ]
 
     def validate_attributes(self, attributes):
@@ -550,6 +622,34 @@ class ProductWriteSerializer(serializers.ModelSerializer):
 
         return attributes
 
+    def validate_variants(self, variants):
+        seen = set()
+
+        for variant in variants:
+            attributes = variant.get(
+                'attributes',
+                {},
+            )
+
+            normalized = tuple(
+                sorted(
+                    (
+                        str(name).strip(),
+                        str(value).strip(),
+                    )
+                    for name, value in attributes.items()
+                )
+            )
+
+            if normalized in seen:
+                raise serializers.ValidationError(
+                    'Нельзя добавить два одинаковых варианта товара.'
+                )
+
+            seen.add(normalized)
+
+        return variants
+
     def to_internal_value(self, data):
         attrs_raw = (
             data.get('attributes')
@@ -557,14 +657,40 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             else None
         )
 
+        variants_raw = (
+            data.get('variants')
+            if hasattr(data, 'get')
+            else None
+        )
+
         if isinstance(attrs_raw, str):
             try:
-                parsed_attrs = json.loads(attrs_raw)
+                parsed_attrs = json.loads(
+                    attrs_raw
+                )
             except (TypeError, ValueError):
                 parsed_attrs = []
 
-            data = data.dict() if hasattr(data, 'dict') else dict(data)
+            data = (
+                data.dict()
+                if hasattr(data, 'dict')
+                else dict(data)
+            )
+
             data['attributes'] = parsed_attrs
+
+        if isinstance(variants_raw, str):
+            try:
+                parsed_variants = json.loads(
+                    variants_raw
+                )
+            except (TypeError, ValueError):
+                parsed_variants = []
+
+            if not isinstance(data, dict):
+                data = dict(data)
+
+            data['variants'] = parsed_variants
 
         return super().to_internal_value(data)
 
@@ -574,12 +700,25 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             [],
         )
 
-        product = Product.objects.create(**validated_data)
+        variants_data = validated_data.pop(
+            'variants',
+            [],
+        )
+
+        product = Product.objects.create(
+            **validated_data
+        )
 
         for attr_data in attributes_data:
             ProductAttribute.objects.create(
                 product=product,
-                **attr_data,
+                **attr_data
+            )
+
+        for variant_data in variants_data:
+            ProductVariant.objects.create(
+                product=product,
+                **variant_data
             )
 
         return product
@@ -590,8 +729,17 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             None,
         )
 
+        variants_data = validated_data.pop(
+            'variants',
+            None,
+        )
+
         for attr, value in validated_data.items():
-            setattr(instance, attr, value)
+            setattr(
+                instance,
+                attr,
+                value,
+            )
 
         instance.save()
 
@@ -601,7 +749,16 @@ class ProductWriteSerializer(serializers.ModelSerializer):
             for attr_data in attributes_data:
                 ProductAttribute.objects.create(
                     product=instance,
-                    **attr_data,
+                    **attr_data
+                )
+
+        if variants_data is not None:
+            instance.variants.all().delete()
+
+            for variant_data in variants_data:
+                ProductVariant.objects.create(
+                    product=instance,
+                    **variant_data
                 )
 
         return instance
@@ -609,9 +766,15 @@ class ProductWriteSerializer(serializers.ModelSerializer):
 
 class ManagerProductSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
-    category = CategorySerializer(read_only=True)
+    category = CategorySerializer(
+        read_only=True,
+    )
     in_stock = serializers.SerializerMethodField()
     attributes = ProductAttributeSerializer(
+        many=True,
+        read_only=True,
+    )
+    variants = ProductVariantSerializer(
         many=True,
         read_only=True,
     )
@@ -630,6 +793,7 @@ class ManagerProductSerializer(serializers.ModelSerializer):
             'category',
             'in_stock',
             'attributes',
+            'variants',
         ]
 
     def get_thumbnail(self, obj):
@@ -639,14 +803,16 @@ class ManagerProductSerializer(serializers.ModelSerializer):
             return None
 
         return (
-            request.build_absolute_uri(obj.thumbnail.url)
+            request.build_absolute_uri(
+                obj.thumbnail.url
+            )
             if request
             else obj.thumbnail.url
         )
 
     def get_in_stock(self, obj):
-        if obj.attributes.exists():
-            return obj.attributes.filter(
+        if obj.variants.exists():
+            return obj.variants.filter(
                 available=True,
                 stock__gt=0,
             ).exists()
