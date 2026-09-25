@@ -10,6 +10,7 @@ import {
   X,
   MessageCircle,
   Grid3X3,
+  Home,
 } from 'lucide-react';
 
 import AuthForm from './AuthForm';
@@ -66,13 +67,17 @@ function Header({
   };
 
   const handleMobileChatOpen = () => {
-    /*
-     * ChatWidget слушает это событие и открывает
-     * своё окно чата.
-     */
     window.dispatchEvent(
       new CustomEvent('shop:open-chat')
     );
+  };
+
+  const handleMobileProfile = () => {
+    closeMobilePanels();
+
+    if (!isAuthenticated) {
+      setAuthOpen(true);
+    }
   };
 
   return (
@@ -241,6 +246,10 @@ function Header({
         )}
       </header>
 
+      {/* =========================================
+          Мобильная панель категорий
+         ========================================= */}
+
       {categoryOpen && (
         <div
           className="mobile-category-panel"
@@ -272,6 +281,10 @@ function Header({
         </div>
       )}
 
+      {/* =========================================
+          Мобильная нижняя навигация
+         ========================================= */}
+
       <nav
         className={`mobile-bottom-nav ${
           isAuthenticated
@@ -280,6 +293,23 @@ function Header({
         }`}
         aria-label="Мобильная навигация"
       >
+        {/* Главная */}
+
+        <Link
+          to="/"
+          className="mobile-nav-item"
+          onClick={closeMobilePanels}
+          aria-label="Главная"
+        >
+          <span className="mobile-nav-icon">
+            <Home size={21} />
+          </span>
+
+          <span>Главная</span>
+        </Link>
+
+        {/* Категории */}
+
         <button
           type="button"
           className={`mobile-nav-item ${
@@ -301,6 +331,8 @@ function Header({
           <span>Категории</span>
         </button>
 
+        {/* Корзина */}
+
         <Link
           to="/cart"
           className="mobile-nav-item"
@@ -319,6 +351,8 @@ function Header({
 
           <span>Корзина</span>
         </Link>
+
+        {/* Избранное */}
 
         <Link
           to="/wishlist"
@@ -339,6 +373,8 @@ function Header({
           <span>Избранное</span>
         </Link>
 
+        {/* Профиль / Войти */}
+
         {isAuthenticated ? (
           <Link
             to="/profile"
@@ -356,19 +392,18 @@ function Header({
           <button
             type="button"
             className="mobile-nav-item"
-            onClick={() => {
-              closeMobilePanels();
-              setAuthOpen(true);
-            }}
-            aria-label="Профиль"
+            onClick={handleMobileProfile}
+            aria-label="Войти"
           >
             <span className="mobile-nav-icon">
               <User size={21} />
             </span>
 
-            <span>Профиль</span>
+            <span>Войти</span>
           </button>
         )}
+
+        {/* Чат — только авторизованным */}
 
         {isAuthenticated && (
           <button

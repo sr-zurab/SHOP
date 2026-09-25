@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/', include('wishlist.urls')),
     path('api/', include('reviews.urls')),
     path('api/', include('chat.urls')),
+    path('api/discounts/', include('discounts.urls')),
 ]
 
 if settings.DEBUG:

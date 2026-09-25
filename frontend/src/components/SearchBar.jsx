@@ -19,7 +19,7 @@ function SearchBar({ onSearch }) {
   }, [expanded]);
 
   const handleToggle = () => {
-    setExpanded(!expanded);
+    setExpanded((value) => !value);
   };
 
   const handleClear = () => {
@@ -34,12 +34,20 @@ function SearchBar({ onSearch }) {
   };
 
   return (
-    <div className={`search-bar ${expanded ? 'expanded' : ''}`}>
+    <div
+      className={`search-bar ${
+        expanded ? 'expanded' : ''
+      }`}
+    >
       <button
         type="button"
         className="search-bar-toggle"
         onClick={handleToggle}
-        aria-label={expanded ? 'Закрыть поиск' : 'Открыть поиск'}
+        aria-label={
+          expanded
+            ? 'Закрыть поиск'
+            : 'Открыть поиск'
+        }
       >
         <FiSearch size={20} />
       </button>

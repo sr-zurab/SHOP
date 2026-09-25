@@ -8,6 +8,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
+from discounts.availability import get_available_discounts
+from discounts.constants import DiscountStatus
+from discounts.models import Discount
+
 from .models import Product, Category, ProductImage
 from .serializers import (
     ProductListSerializer,
@@ -19,11 +23,11 @@ from .serializers import (
 
 
 ORDERING_MAP = {
-    'price_asc': ['price'],
-    'price_desc': ['-price'],
-    'newest': ['-created'],
-    'popular': ['-orders_count', '-created'],
-    'rating': ['-avg_rating', '-created'],
+    'price_asc': ['price', 'id'],
+    'price_desc': ['-price', 'id'],
+    'newest': ['-created', 'id'],
+    'popular': ['-orders_count', '-created', 'id'],
+    'rating': ['-avg_rating', '-created', 'id'],
 }
 
 
@@ -86,6 +90,102 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data)
 
+    def _get_category_tree_ids(self, category):
+        category_ids = [category.pk]
+        current_ids = [category.pk]
+
+        while current_ids:
+            child_ids = list(
+                Category.objects.filter(
+                    parent_id__in=current_ids,
+                ).values_list(
+                    'id',
+                    flat=True,
+                )
+            )
+
+            if not child_ids:
+                break
+
+            category_ids.extend(child_ids)
+            current_ids = child_ids
+
+        return category_ids
+
+    def _get_available_display_discounts(self):
+        discounts = Discount.objects.filter(
+            status=DiscountStatus.ACTIVE,
+        ).prefetch_related(
+            'products',
+            'categories',
+        )
+
+        user = (
+            self.request.user
+            if self.request.user.is_authenticated
+            else None
+        )
+
+        return get_available_discounts(
+            discounts=discounts,
+            user=user,
+        )
+
+    def _get_product_display_discounts(self, products):
+        discounts = self._get_available_display_discounts()
+
+        product_ids = {
+            product.id
+            for product in products
+        }
+
+        category_ids = {
+            product.category_id
+            for product in products
+            if product.category_id is not None
+        }
+
+        discounts_by_product = {}
+        discounts_by_category = {}
+        global_discounts = []
+
+        for discount in discounts:
+            discount_product_ids = {
+                product.id
+                for product in discount.products.all()
+            }
+
+            discount_category_ids = {
+                category.id
+                for category in discount.categories.all()
+            }
+
+            if not discount_product_ids and not discount_category_ids:
+                global_discounts.append(discount)
+                continue
+
+            for product_id in (
+                discount_product_ids & product_ids
+            ):
+                discounts_by_product.setdefault(
+                    product_id,
+                    [],
+                ).append(discount)
+
+            for category_id in (
+                discount_category_ids & category_ids
+            ):
+                discounts_by_category.setdefault(
+                    category_id,
+                    [],
+                ).append(discount)
+
+        return {
+            'discounts_by_product': discounts_by_product,
+            'discounts_by_category': discounts_by_category,
+            'global_discounts': global_discounts,
+        }
+
     def get_queryset(self):
         qs = Product.objects.select_related('category')
 
@@ -101,6 +201,12 @@ class ProductViewSet(viewsets.ModelViewSet):
                     'reviews__rating',
                 ),
             )
+
+            qs = qs.prefetch_related(
+                'attributes',
+                'discounts',
+                'category__discounts',
+            )
         else:
             qs = qs.prefetch_related(
                 'images',
@@ -110,9 +216,18 @@ class ProductViewSet(viewsets.ModelViewSet):
         category_slug = self.request.query_params.get('category')
 
         if category_slug:
-            qs = qs.filter(
-                category__slug=category_slug,
-            )
+            category = Category.objects.filter(
+                slug=category_slug,
+            ).first()
+
+            if category:
+                category_ids = self._get_category_tree_ids(
+                    category,
+                )
+
+                qs = qs.filter(
+                    category_id__in=category_ids,
+                )
 
         search = self.request.query_params.get('search')
 
@@ -127,6 +242,8 @@ class ProductViewSet(viewsets.ModelViewSet):
             qs = qs.order_by(
                 *ORDERING_MAP[ordering],
             )
+        else:
+            qs = qs.order_by('id')
 
         return qs
 
@@ -147,9 +264,71 @@ class ProductViewSet(viewsets.ModelViewSet):
         return ProductDetailSerializer
 
     def get_serializer_context(self):
-        return {
+        context = {
             'request': self.request,
         }
+
+        if self.action == 'list':
+            products = getattr(
+                self,
+                '_display_discount_products',
+                None,
+            )
+
+            if products is not None:
+                context.update(
+                    self._get_product_display_discounts(
+                        products,
+                    )
+                )
+
+        return context
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(
+            self.get_queryset()
+        )
+
+        page = self.paginate_queryset(queryset)
+
+        products = (
+            list(page)
+            if page is not None
+            else list(queryset)
+        )
+
+        self._display_discount_products = products
+
+        serializer = self.get_serializer(
+            products,
+            many=True,
+        )
+
+        if page is not None:
+            return self.get_paginated_response(
+                serializer.data
+            )
+
+        return Response(
+            serializer.data
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        context = self.get_serializer_context()
+        context.update(
+            self._get_product_display_discounts(
+                [instance],
+            )
+        )
+
+        serializer = self.get_serializer(
+            instance,
+            context=context,
+        )
+
+        return Response(serializer.data)
 
     def _create_gallery_images(self, product):
         for order, image in enumerate(

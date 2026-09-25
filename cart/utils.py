@@ -34,31 +34,33 @@ def merge_cart(request, user):
     user_cart, _ = Cart.objects.get_or_create(user=user)
 
     for item in anon_cart.items.select_related('product'):
+        if item.selected_attributes:
+            attrs = item.product.attributes.filter(
+                name__in=item.selected_attributes.keys(),
+                value__in=item.selected_attributes.values(),
+                available=True
+            )
+
+            max_stock = min(
+                (attr.stock for attr in attrs),
+                default=0
+            )
+        else:
+            max_stock = item.product.stock
+
+        quantity = min(item.quantity, max_stock)
+
         existing, created = CartItem.objects.get_or_create(
             cart=user_cart,
             product=item.product,
             selected_attributes=item.selected_attributes,
             defaults={
-                'quantity': item.quantity
+                'quantity': quantity
             }
         )
 
         if not created:
             new_quantity = existing.quantity + item.quantity
-
-            if item.selected_attributes:
-                attrs = item.product.attributes.filter(
-                    name__in=item.selected_attributes.keys(),
-                    value__in=item.selected_attributes.values(),
-                    available=True
-                )
-                max_stock = min(
-                    (attr.stock for attr in attrs),
-                    default=0
-                )
-            else:
-                max_stock = item.product.stock
-
             existing.quantity = min(new_quantity, max_stock)
             existing.save()
 
